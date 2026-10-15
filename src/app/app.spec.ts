@@ -36,4 +36,14 @@ describe('App', () => {
       },
     ]);
   });
+
+  it('keeps selected and favorite members independent', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+
+    app.selectMember(app.team[0]);
+    app.setFavorite(app.team[1]);
+
+    expect(app.selectedMember?.name).toBe('Meera Joshi');
+    expect(app.favoriteMember?.name).toBe('Anil Verma');
+  });
 });
