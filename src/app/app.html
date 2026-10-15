@@ -37,22 +37,19 @@
     <p class="selection-message">Select a card first and change nothing.</p>
   }
 
-  @if (filteredMembers.length > 0) {
-    <div class="cards-grid">
-      <!-- Covers is unique for each teammate and does not change when names or jobs are edited. -->
-      @for (member of filteredMembers; track member.covers) {
-        <app-team-card
-          [member]="member"
-          [isSelected]="selectedMember?.covers === member.covers"
-          [isFavorite]="favoriteMember?.covers === member.covers"
-          [appHighlight]="getHighlightColor(member)"
-          [class.is-selected]="selectedMember?.covers === member.covers"
-          (cardSelected)="selectMember(member)"
-          (favoriteSelected)="setFavorite(member)"
-        ></app-team-card>
-      }
-    </div>
-  } @else {
-    <div class="empty-state">No team members match</div>
-  }
+  <div class="cards-grid">
+    <app-team-card
+      *ngFor="let member of filteredMembers; trackBy: trackByCovers"
+      [member]="member"
+      [isSelected]="selectedMember?.covers === member.covers"
+      [isFavorite]="favoriteMember?.covers === member.covers"
+      [appHighlight]="getHighlightColor(member)"
+      [class.is-selected]="selectedMember?.covers === member.covers"
+      (cardSelected)="selectMember(member)"
+      (favoriteSelected)="setFavorite(member)"
+    ></app-team-card>
+  </div>
+  <div *ngIf="filteredMembers.length === 0" class="empty-state">
+    No team members match
+  </div>
 </main>

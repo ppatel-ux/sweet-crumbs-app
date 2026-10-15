@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HighlightDirective } from './highlight';
 import { TeamCardComponent } from './team-card/team-card';
@@ -12,7 +13,7 @@ export interface TeamMember {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [TeamCardComponent, HighlightDirective, FormsModule],
+  imports: [TeamCardComponent, HighlightDirective, CommonModule, FormsModule],
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
@@ -36,6 +37,10 @@ export class AppComponent {
     }
 
     return this.team.filter((member) => member.name.toLowerCase().includes(term));
+  }
+
+  trackByCovers(_index: number, member: TeamMember): string {
+    return member.covers;
   }
 
   selectMember(member: TeamMember): void {
