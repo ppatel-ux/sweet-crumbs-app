@@ -46,4 +46,20 @@ describe('App', () => {
     expect(app.selectedMember?.name).toBe('Meera Joshi');
     expect(app.favoriteMember?.name).toBe('Anil Verma');
   });
+
+  it('updates only the selected member name and keeps favorite in sync', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const originalMeera = app.team[0];
+    const originalAnil = app.team[1];
+    app.selectMember(originalMeera);
+    app.setFavorite(originalMeera);
+
+    app.changeSelectedName();
+
+    expect(app.team[0].name).toBe('Meera Joshi Updated');
+    expect(app.team[0]).not.toBe(originalMeera);
+    expect(app.team[1]).toBe(originalAnil);
+    expect(app.selectedMember).toBe(app.team[0]);
+    expect(app.favoriteMember).toBe(app.team[0]);
+  });
 });
