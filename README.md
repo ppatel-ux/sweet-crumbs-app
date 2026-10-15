@@ -44,6 +44,17 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
+## Assignment notes
+
+- A new member object is created when a selected member changes. With `OnPush`, replacing the input reference triggers the card update; mutating a property on the same object does not trigger `ngOnChanges` for that input.
+- The `@for` block tracks each member by `covers`, which is unique and remains unchanged when a name or job changes. This lets Angular retain the matching card instance while the list is filtered or updated.
+- `@for`/`@if` are Angular's built-in control-flow syntax and do not require importing `CommonModule`. `*ngFor`/`*ngIf` are structural directives and need the corresponding directives imported. Both approaches can render the same list and empty state.
+- Two differences observed in the comparison: built-in `@for` supports an attached `@empty` block and uses an inline `track` expression; `*ngFor` uses a separate `trackBy` callback and needs `*ngIf` separately for the empty message. The built-in syntax also avoids importing `CommonModule` for these controls.
+- `ng-content` projects markup supplied by the caller into the card shell. `ng-template` defines reusable markup inside the component that owns it; here one detail-row template is rendered twice with different context values.
+- Emulated view encapsulation scopes component styles. `ViewEncapsulation.None` makes component rules global and can unintentionally style other elements; Shadow DOM isolates styles inside a shadow root.
+- The highlight directive uses `Renderer2` to apply and remove host styles. A directive is reusable behavior; CSS `:hover` is simpler when the effect is purely visual and does not need configurable or shared behavior.
+- The DevTools screenshot for Chapter 7 must be captured during the browser exercise: inspect an element inside a team card and show Angular's generated `_ngcontent`/`_nghost` attributes while Emulated encapsulation is active.
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:
