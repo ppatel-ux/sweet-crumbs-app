@@ -1,0 +1,108 @@
+:host {
+  display: block;
+}
+
+.team-card-shell {
+  display: block;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:host(.is-selected) .team-card-shell {
+  border-color: #f59e0b;
+  box-shadow: 0 18px 28px rgba(245, 158, 11, 0.18);
+}
+
+.team-card__header {
+  margin-bottom: 18px;
+}
+
+.team-card__title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.job-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 66px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.job-badge.founder {
+  background: #ffe5d5;
+  color: #a14b01;
+}
+
+.job-badge.sales {
+  background: #dff7ef;
+  color: #0e7c53;
+}
+
+.job-badge.support {
+  background: #efe5ff;
+  color: #5a2f91;
+}
+
+.job-badge.team {
+  background: #edf2ff;
+  color: #3153b9;
+}
+
+.team-card__body {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.detail-value {
+  text-align: right;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.team-card__footer {
+  margin-top: 18px;
+}
+
+.favorite-button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f5d0fe;
+  color: #6b21a8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:host(.is-favorite) .favorite-button {
+  background: #d1fae5;
+  color: #065f46;
+}

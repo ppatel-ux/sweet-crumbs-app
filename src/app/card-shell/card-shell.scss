@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+.card-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;
+  padding: 18px 16px 16px;
+  border: 1px solid #e7dcfb;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(88, 63, 128, 0.08);
+}
+
+.card-shell__header,
+.card-shell__body,
+.card-shell__footer {
+  display: block;
+}
+
+.card-shell__body {
+  flex: 1;
+}
+
+.card-shell__footer {
+  margin-top: auto;
+}

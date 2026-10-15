@@ -1,0 +1,46 @@
+<main class="page-shell">
+  <header class="page-header">
+    <h1>Sweet Crumbs team</h1>
+    <div class="status-row">
+      <span class="status-pill">Selected: @if (selectedMember) { {{ selectedMember.name }} } @else { none }</span>
+      <span class="status-pill">Favorite: @if (favoriteMember) { {{ favoriteMember.name }} } @else { none yet }</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <input
+      type="search"
+      class="search-input"
+      [(ngModel)]="searchTerm"
+      placeholder="Search by name"
+      aria-label="Search team members"
+    />
+    <button type="button" class="action-button" (click)="changeSelectedName()">Change name</button>
+    <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
+  </div>
+
+  <div class="results-count">Showing {{ filteredMembers.length }} of {{ team.length }}</div>
+
+  @if (selectedMember === null) {
+    <p class="selection-message">Select a card first and change nothing.</p>
+  }
+
+  @if (filteredMembers.length > 0) {
+    <div class="cards-grid">
+      @for (member of filteredMembers; track member.name) {
+        <!-- Track by name so the same person keeps the same card instance when the search list changes. -->
+        <app-team-card
+          [member]="member"
+          [isSelected]="selectedMember?.name === member.name"
+          [isFavorite]="favoriteMember?.name === member.name"
+          [appHighlight]="getHighlightColor(member)"
+          [class.is-selected]="selectedMember?.name === member.name"
+          (cardSelected)="selectMember(member)"
+          (favoriteSelected)="setFavorite(member)"
+        ></app-team-card>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">No team members match</div>
+  }
+</main>

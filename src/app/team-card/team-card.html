@@ -1,0 +1,45 @@
+<app-card-shell class="team-card-shell" (click)="selectCard()">
+  <div class="team-card__header" card-header>
+    <div class="team-card__title-wrap">
+      <span class="name">{{ member.name }}</span>
+      @switch (member.job) {
+        @case ('Founder and Sales Head') {
+          <span class="job-badge founder">Founder</span>
+        }
+        @case ('Sales Rep') {
+          <span class="job-badge sales">Sales</span>
+        }
+        @case ('Customer Support') {
+          <span class="job-badge support">Support</span>
+        }
+        @default {
+          <span class="job-badge team">Team</span>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="team-card__body" card-body>
+    <ng-template #detailRow let-label="label" let-value="value">
+      <div class="detail-row">
+        <span class="detail-label">{{ label }}</span>
+        <span class="detail-value">{{ value }}</span>
+      </div>
+    </ng-template>
+
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{ label: 'Job', value: member.job }"
+    ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{ label: 'Covers', value: member.covers }"
+    ></ng-container>
+  </div>
+
+  <div class="team-card__footer" card-footer>
+    <button type="button" class="favorite-button" (click)="onFavoriteClick($event)">
+      {{ isFavorite ? 'Favorited' : 'Mark as favorite' }}
+    </button>
+  </div>
+</app-card-shell>
