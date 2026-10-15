@@ -6,6 +6,7 @@ import { Directive, ElementRef, HostListener, Input, Renderer2, inject } from '@
 })
 export class HighlightDirective {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
+  // Renderer2 keeps host styling inside Angular's renderer instead of writing directly to the DOM.
   private readonly renderer = inject(Renderer2);
 
   @Input('appHighlight') color = '#fff3cd';
