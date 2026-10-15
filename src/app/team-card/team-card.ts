@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { CardShellComponent } from '../card-shell/card-shell';
 import { TeamMember } from '../app';
@@ -9,6 +18,7 @@ import { TeamMember } from '../app';
   imports: [NgTemplateOutlet, CardShellComponent],
   styleUrl: './team-card.scss',
   templateUrl: './team-card.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TeamCardComponent implements OnInit, OnChanges {
   @Input() member!: TeamMember;

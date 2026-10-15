@@ -1,5 +1,7 @@
 :host {
   display: block;
+  border-radius: 16px;
+  background-color: #ffffff;
 }
 
 .team-card-shell {
@@ -8,8 +10,9 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-:host(.is-selected) .team-card-shell {
-  border-color: #f59e0b;
+:host(.is-selected) {
+  background-color: #fff4d6;
+  outline: 3px solid #f59e0b;
   box-shadow: 0 18px 28px rgba(245, 158, 11, 0.18);
 }
 

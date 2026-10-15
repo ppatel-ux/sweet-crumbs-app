@@ -15,7 +15,19 @@
       placeholder="Search by name"
       aria-label="Search team members"
     />
-    <button type="button" class="action-button" (click)="changeSelectedName()">Change name</button>
+    <input
+      type="text"
+      class="search-input name-input"
+      [(ngModel)]="newName"
+      placeholder="Enter new name"
+      aria-label="New name for selected team member"
+    />
+    <button
+      type="button"
+      class="action-button"
+      [disabled]="!selectedMember || !newName.trim()"
+      (click)="changeSelectedName()"
+    >Change name</button>
     <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
   </div>
 
@@ -27,14 +39,14 @@
 
   @if (filteredMembers.length > 0) {
     <div class="cards-grid">
-      @for (member of filteredMembers; track member.name) {
-        <!-- Track by name so the same person keeps the same card instance when the search list changes. -->
+      <!-- Covers is unique for each teammate and does not change when names or jobs are edited. -->
+      @for (member of filteredMembers; track member.covers) {
         <app-team-card
           [member]="member"
-          [isSelected]="selectedMember?.name === member.name"
-          [isFavorite]="favoriteMember?.name === member.name"
+          [isSelected]="selectedMember?.covers === member.covers"
+          [isFavorite]="favoriteMember?.covers === member.covers"
           [appHighlight]="getHighlightColor(member)"
-          [class.is-selected]="selectedMember?.name === member.name"
+          [class.is-selected]="selectedMember?.covers === member.covers"
           (cardSelected)="selectMember(member)"
           (favoriteSelected)="setFavorite(member)"
         ></app-team-card>
