@@ -62,4 +62,16 @@ describe('App', () => {
     expect(app.selectedMember).toBe(app.team[0]);
     expect(app.favoriteMember).toBe(app.team[0]);
   });
+
+  it('changes only the selected member job', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const originalMeera = app.team[0];
+    app.selectMember(app.team[1]);
+
+    app.changeSelectedJob();
+
+    expect(app.team[1].job).toBe('Sales Strategist');
+    expect(app.selectedMember?.job).toBe('Sales Strategist');
+    expect(app.team[0]).toBe(originalMeera);
+  });
 });
