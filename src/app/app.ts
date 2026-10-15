@@ -27,6 +27,7 @@ export class AppComponent {
   selectedMember: TeamMember | null = null;
   favoriteMember: TeamMember | null = null;
   searchTerm = '';
+  newName = '';
 
   get filteredMembers(): TeamMember[] {
     const term = this.searchTerm.trim().toLowerCase();
@@ -46,22 +47,13 @@ export class AppComponent {
   }
 
   changeSelectedName(): void {
-    if (!this.selectedMember) {
+    const name = this.newName.trim();
+    if (!this.selectedMember || !name) {
       return;
     }
 
-    const previousName = this.selectedMember.name;
-    const updatedName = `${previousName} Updated`;
-
-    this.team = this.team.map((member) =>
-      member.name === previousName ? { ...member, name: updatedName } : member,
-    );
-
-    this.selectedMember = this.team.find((member) => member.name === updatedName) ?? null;
-    this.favoriteMember =
-      this.favoriteMember && this.favoriteMember.name === previousName
-        ? this.selectedMember
-        : this.favoriteMember;
+    this.updateSelectedMember({ ...this.selectedMember, name });
+    this.newName = '';
   }
 
   changeSelectedJob(): void {
@@ -69,28 +61,34 @@ export class AppComponent {
       return;
     }
 
-    const previousName = this.selectedMember.name;
-    const nextJob =
-      this.selectedMember.job === 'Founder and Sales Head'
-        ? 'Growth Lead'
-        : this.selectedMember.job === 'Sales Rep'
-          ? 'Sales Strategist'
-          : this.selectedMember.job === 'Customer Support'
-            ? 'Customer Experience Lead'
-            : 'Team Lead';
+    const jobOptions =
+      this.selectedMember.covers === 'Everything'
+        ? ['Founder and Sales Head', 'Growth Lead', 'Operations Lead']
+        : this.selectedMember.covers === 'Complaints from both towns'
+          ? ['Customer Support', 'Customer Experience Lead', 'Support Manager']
+          : ['Sales Rep', 'Sales Strategist', 'Regional Sales Lead'];
+    const currentIndex = jobOptions.indexOf(this.selectedMember.job);
+    const nextJob = jobOptions[(currentIndex + 1) % jobOptions.length];
 
-    this.team = this.team.map((member) =>
-      member.name === previousName ? { ...member, job: nextJob } : member,
-    );
-
-    this.selectedMember = this.team.find((member) => member.name === previousName) ?? null;
-    if (this.selectedMember) {
-      this.selectedMember = { ...this.selectedMember, job: nextJob };
-    }
+    this.updateSelectedMember({ ...this.selectedMember, job: nextJob });
   }
 
   getHighlightColor(member: TeamMember): string {
     return member.job === 'Customer Support' ? '#f3e8ff' : '#fff3cd';
+  }
+
+  private updateSelectedMember(updatedMember: TeamMember): void {
+    this.team = this.team.map((member) =>
+      member.covers === updatedMember.covers ? updatedMember : member,
+    );
+
+    if (this.selectedMember?.covers === updatedMember.covers) {
+      this.selectedMember = updatedMember;
+    }
+
+    if (this.favoriteMember?.covers === updatedMember.covers) {
+      this.favoriteMember = updatedMember;
+    }
   }
 }
 

@@ -60,6 +60,10 @@ h1 {
   font-size: 1rem;
 }
 
+.name-input {
+  flex-basis: 200px;
+}
+
 .action-button {
   border: 0;
   border-radius: 10px;
@@ -69,6 +73,13 @@ h1 {
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action-button:disabled {
+  background: #a7a4b2;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .action-button:hover {

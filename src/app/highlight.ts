@@ -22,10 +22,7 @@ export class HighlightDirective {
 
   @HostListener('mouseleave')
   onMouseLeave(): void {
-    if (this.elementRef.nativeElement.classList.contains('is-selected')) {
-      return;
-    }
-
     this.renderer.removeStyle(this.elementRef.nativeElement, 'background-color');
+    this.renderer.removeStyle(this.elementRef.nativeElement, 'transition');
   }
 }
