@@ -68,4 +68,46 @@
       <p class="empty-state">No recent activity yet.</p>
     }
   </section>
+
+  <section class="orders-section" aria-labelledby="orders-heading">
+    <h2 id="orders-heading">Orders ({{ orders.length }})</h2>
+    <div class="table-scroll">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th scope="col">Order</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Flavour</th>
+            <th scope="col">Size (kg)</th>
+            <th scope="col">Delivery date</th>
+            <th scope="col">Town</th>
+            <th scope="col">Status</th>
+            <th scope="col">Price</th>
+            <th scope="col">Order size</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders; track order.orderNumber) {
+            <tr [class.big-order-row]="order.bigOrder">
+              <td>{{ order.orderNumber }}</td>
+              <td>{{ order.accountName }}</td>
+              <td>{{ order.flavour }}</td>
+              <td>{{ order.sizeKg }}</td>
+              <td>{{ order.deliveryDate }}</td>
+              <td>{{ order.deliveryTown }}</td>
+              <td>{{ order.status }}</td>
+              <td>{{ order.price ?? '—' }}</td>
+              <td>
+                @if (order.bigOrder) {
+                  <span class="big-order-badge">Big order</span>
+                } @else {
+                  <span>Standard</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
 </main>

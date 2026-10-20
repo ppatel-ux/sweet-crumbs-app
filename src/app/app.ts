@@ -4,6 +4,8 @@ import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
 import { TeamCardComponent } from './team-card/team-card';
 import { TeamMember } from './models/team-member';
+import { Order } from './models/order';
+import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
 
 @Component({
@@ -15,8 +17,10 @@ import { TeamService } from './services/team.service';
 })
 export class AppComponent {
   private readonly teamService = inject(TeamService);
+  private readonly orderService = inject(OrderService);
   private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
+  orders: Order[] = this.orderService.getAll();
 
   selectedMember: TeamMember | null = null;
   favoriteMember: TeamMember | null = null;
