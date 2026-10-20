@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
 import { TeamCardComponent } from './team-card/team-card';
 import { TeamMember } from './models/team-member';
@@ -14,6 +15,7 @@ import { TeamService } from './services/team.service';
 })
 export class AppComponent {
   private readonly teamService = inject(TeamService);
+  private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
 
   selectedMember: TeamMember | null = null;
@@ -30,8 +32,13 @@ export class AppComponent {
     return this.team.filter((member) => member.name.toLowerCase().includes(term));
   }
 
+  get recentActivities(): string[] {
+    return this.activityLog.getAll().slice(0, 5);
+  }
+
   selectMember(member: TeamMember): void {
     this.selectedMember = member;
+    this.activityLog.add(`Card selected: ${member.name}`);
   }
 
   setFavorite(member: TeamMember): void {
@@ -81,6 +88,7 @@ export class AppComponent {
     if (this.favoriteMember?.covers === updatedMember.covers) {
       this.favoriteMember = updatedMember;
     }
+    this.activityLog.add(`Team member updated: ${updatedMember.name}`);
   }
 }
 

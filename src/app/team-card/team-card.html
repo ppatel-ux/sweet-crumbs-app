@@ -38,6 +38,7 @@
   </div>
 
   <div class="team-card__footer" card-footer>
+    <span class="click-count">Clicks: {{ clickCount }}</span>
     <button type="button" class="favorite-button" (click)="onFavoriteClick($event)">
       {{ isFavorite ? 'Favorited' : 'Mark as favorite' }}
     </button>

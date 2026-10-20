@@ -55,4 +55,17 @@
   } @else {
     <div class="empty-state">No team members match</div>
   }
+
+  <section class="activity-section" aria-labelledby="activity-heading">
+    <h2 id="activity-heading">Recent activity</h2>
+    @if (recentActivities.length > 0) {
+      <ul class="activity-list">
+        @for (activity of recentActivities; track $index) {
+          <li>{{ activity }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="empty-state">No recent activity yet.</p>
+    }
+  </section>
 </main>
