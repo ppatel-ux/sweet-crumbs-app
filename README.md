@@ -1,59 +1,38 @@
-# SweetCrumbsApp
+# Sweet Crumbs Order Desk
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.2.
+An Angular standalone application for the Sweet Crumbs team board, customer enquiries, and cake orders.
 
-## Development server
+## Features
 
-To start a local development server, run:
+- Team member search, selection, favorites, and updates, backed by `TeamService`.
+- Shared recent activity through the root-provided `ActivityLogService`.
+- Independent click counters through a card-scoped `CardClicksService`.
+- Seeded orders and generated order numbers through `OrderService`.
+- A template-driven customer enquiry form and a reactive new-order form.
+- Central order-size rules provided with the `APP_CONFIG` injection token.
+- Reusable validators for past delivery dates and the price required for delivered orders.
 
-```bash
-ng serve
-```
+Services are in `src/app/services/`, shared interfaces and order types are in `src/app/models/`, and reusable validators are in `src/app/validators/`.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Development
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Install dependencies with `npm install`, then start the local server:
 
 ```bash
-ng generate --help
+npm start
 ```
 
-## Building
+Open `http://localhost:4200/`. The development server reloads when source files change.
 
-To build the project run:
+## Build and tests
 
 ```bash
-ng build
+npm run build
+npm test -- --watch=false
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+The tests cover service behavior, injector scope, order numbering, form submission and reset behavior, configured size limits, and custom date and delivery-price validation.
 
-## Running unit tests
+## Order rules
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Order size limits and the big-order threshold are defined once in `src/app/app.config.ts` through `APP_CONFIG`. An order is considered big when its size is at least `bigOrderKg`. Orders must have a valid delivery date that is not in the past, and a price is required when the status is `Delivered`.
