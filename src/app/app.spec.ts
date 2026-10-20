@@ -1,10 +1,22 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { APP_CONFIG } from './app-config';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [
+        {
+          provide: APP_CONFIG,
+          useValue: {
+            minSizeKg: 0.5,
+            maxSizeKg: 10,
+            bigOrderKg: 5,
+            apiBaseUrl: 'http://localhost:3000/api',
+          },
+        },
+      ],
     })
       .compileComponents();
   });

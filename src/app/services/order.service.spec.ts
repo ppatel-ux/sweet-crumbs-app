@@ -1,10 +1,20 @@
 import { TestBed } from '@angular/core/testing';
+import { APP_CONFIG, AppConfig } from '../app-config';
 import { ActivityLogService } from './activity-log.service';
 import { OrderService } from './order.service';
 
 describe('OrderService', () => {
+  const defaultConfig: AppConfig = {
+    minSizeKg: 0.5,
+    maxSizeKg: 10,
+    bigOrderKg: 5,
+    apiBaseUrl: 'http://localhost:3000/api',
+  };
+
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [{ provide: APP_CONFIG, useValue: defaultConfig }],
+    });
   });
 
   it('starts with the five specified orders and marks large sample orders', () => {
@@ -47,5 +57,24 @@ describe('OrderService', () => {
       'Order SCO-0007 added',
       'Order SCO-0006 added',
     ]);
+  });
+
+  it('uses the configured big-order threshold for seed and new orders', () => {
+    TestBed.overrideProvider(APP_CONFIG, {
+      useValue: { ...defaultConfig, bigOrderKg: 3 },
+    });
+    const service = TestBed.inject(OrderService);
+
+    expect(service.getAll().find((order) => order.orderNumber === 'SCO-0002')?.bigOrder).toBe(true);
+    expect(
+      service.add({
+        accountName: 'Threshold Customer',
+        flavour: 'Vanilla',
+        sizeKg: 3,
+        deliveryDate: '2026-10-30',
+        deliveryTown: 'Southbay',
+        status: 'New',
+      }).bigOrder,
+    ).toBe(true);
   });
 });

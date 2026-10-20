@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
+import { APP_CONFIG } from '../app-config';
 import { ActivityLogService } from './activity-log.service';
 import { NewOrder, Order } from '../models/order';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
+  private readonly config = inject(APP_CONFIG);
   private readonly activityLog = inject(ActivityLogService);
   private readonly orders: Order[] = [
     {
@@ -15,7 +17,7 @@ export class OrderService {
       deliveryTown: 'Northfield',
       status: 'New',
       price: 1800,
-      bigOrder: false,
+      bigOrder: 2 >= this.config.bigOrderKg,
       webReference: '',
     },
     {
@@ -27,7 +29,7 @@ export class OrderService {
       deliveryTown: 'Southbay',
       status: 'Baking',
       price: 2900,
-      bigOrder: false,
+      bigOrder: 3.5 >= this.config.bigOrderKg,
       webReference: '',
     },
     {
@@ -39,7 +41,7 @@ export class OrderService {
       deliveryTown: 'Northfield',
       status: 'New',
       price: 950,
-      bigOrder: false,
+      bigOrder: 1 >= this.config.bigOrderKg,
       webReference: '',
     },
     {
@@ -51,7 +53,7 @@ export class OrderService {
       deliveryTown: 'Southbay',
       status: 'New',
       price: 4200,
-      bigOrder: true,
+      bigOrder: 6 >= this.config.bigOrderKg,
       webReference: '',
     },
     {
@@ -63,7 +65,7 @@ export class OrderService {
       deliveryTown: 'Northfield',
       status: 'Out for Delivery',
       price: 3600,
-      bigOrder: true,
+      bigOrder: 5 >= this.config.bigOrderKg,
       webReference: '',
     },
   ];
@@ -77,7 +79,7 @@ export class OrderService {
     const createdOrder: Order = {
       ...order,
       orderNumber: `SCO-${String(this.nextSequence).padStart(4, '0')}`,
-      bigOrder: order.sizeKg >= 5,
+      bigOrder: order.sizeKg >= this.config.bigOrderKg,
       webReference: order.webReference ?? '',
     };
     this.nextSequence += 1;
