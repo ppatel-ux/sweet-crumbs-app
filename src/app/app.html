@@ -2,8 +2,22 @@
   <header class="page-header">
     <h1>Sweet Crumbs team</h1>
     <div class="status-row">
-      <span class="status-pill">Selected: @if (selectedMember) { {{ selectedMember.name }} } @else { none }</span>
-      <span class="status-pill">Favorite: @if (favoriteMember) { {{ favoriteMember.name }} } @else { none yet }</span>
+      <span class="status-pill"
+        >Selected:
+        @if (selectedMember) {
+          {{ selectedMember.name }}
+        } @else {
+          none
+        }
+      </span>
+      <span class="status-pill"
+        >Favorite:
+        @if (favoriteMember) {
+          {{ favoriteMember.name }}
+        } @else {
+          none yet
+        }
+      </span>
     </div>
   </header>
 
@@ -27,7 +41,9 @@
       class="action-button"
       [disabled]="!selectedMember || !newName.trim()"
       (click)="changeSelectedName()"
-    >Change name</button>
+    >
+      Change name
+    </button>
     <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
   </div>
 
@@ -109,5 +125,232 @@
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section class="form-section" aria-labelledby="enquiry-heading">
+    <h2 id="enquiry-heading">Customer enquiry</h2>
+    <form #enquiryForm="ngForm" (ngSubmit)="submitEnquiry(enquiryForm)" novalidate>
+      <div class="form-field">
+        <label for="enquiry-name">Name</label>
+        <input
+          id="enquiry-name"
+          name="name"
+          type="text"
+          required
+          minlength="3"
+          pattern=".*\S.*"
+          [(ngModel)]="enquiryName"
+          #enquiryNameControl="ngModel"
+          [attr.aria-invalid]="showEnquiryError(enquiryNameControl)"
+          [attr.aria-describedby]="
+            showEnquiryError(enquiryNameControl) ? 'enquiry-name-error' : null
+          "
+        />
+        @if (showEnquiryError(enquiryNameControl)) {
+          <small id="enquiry-name-error" class="field-error" role="alert">
+            @if (enquiryNameControl.hasError('required')) {
+              Name is required.
+            } @else if (enquiryNameControl.hasError('pattern')) {
+              Name cannot be blank.
+            } @else {
+              Enter at least 3 characters.
+            }
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="enquiry-email">Email</label>
+        <input
+          id="enquiry-email"
+          name="email"
+          type="email"
+          required
+          email
+          [(ngModel)]="enquiryEmail"
+          #enquiryEmailControl="ngModel"
+          [attr.aria-invalid]="showEnquiryError(enquiryEmailControl)"
+          [attr.aria-describedby]="
+            showEnquiryError(enquiryEmailControl) ? 'enquiry-email-error' : null
+          "
+        />
+        @if (showEnquiryError(enquiryEmailControl)) {
+          <small id="enquiry-email-error" class="field-error" role="alert">
+            @if (enquiryEmailControl.hasError('required')) {
+              Email is required.
+            } @else {
+              Enter a valid email address.
+            }
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="enquiry-message">Message</label>
+        <textarea
+          id="enquiry-message"
+          name="message"
+          required
+          maxlength="200"
+          pattern="[\s\S]*\S[\s\S]*"
+          rows="4"
+          [(ngModel)]="enquiryMessage"
+          #enquiryMessageControl="ngModel"
+          [attr.aria-invalid]="showEnquiryError(enquiryMessageControl)"
+          [attr.aria-describedby]="
+            showEnquiryError(enquiryMessageControl)
+              ? 'enquiry-message-count enquiry-message-error'
+              : 'enquiry-message-count'
+          "
+        ></textarea>
+        <span id="enquiry-message-count" class="field-hint">
+          {{ (enquiryMessage ?? '').length }}/200 characters
+        </span>
+        @if (showEnquiryError(enquiryMessageControl)) {
+          <small id="enquiry-message-error" class="field-error" role="alert">
+            @if (enquiryMessageControl.hasError('required')) {
+              Message is required.
+            } @else if (enquiryMessageControl.hasError('pattern')) {
+              Message cannot be blank.
+            } @else {
+              Message must be 200 characters or fewer.
+            }
+          </small>
+        }
+      </div>
+      <button type="submit" class="action-button" [disabled]="enquiryForm.invalid">
+        Send enquiry
+      </button>
+      @if (enquiryThankYou) {
+        <p class="success-message" role="status">{{ enquiryThankYou }}</p>
+      }
+    </form>
+  </section>
+
+  <section class="form-section" aria-labelledby="new-order-heading">
+    <h2 id="new-order-heading">New order</h2>
+    <form [formGroup]="orderForm" (ngSubmit)="submitOrder()" novalidate>
+      <div class="form-field">
+        <label for="order-account-name">Customer</label>
+        <input
+          id="order-account-name"
+          type="text"
+          formControlName="accountName"
+          [attr.aria-invalid]="showOrderError('accountName')"
+          [attr.aria-describedby]="
+            showOrderError('accountName') ? 'order-account-name-error' : null
+          "
+        />
+        @if (showOrderError('accountName')) {
+          <small id="order-account-name-error" class="field-error" role="alert">
+            {{ orderErrorMessage('accountName') }}
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="order-flavour">Flavour</label>
+        <select
+          id="order-flavour"
+          formControlName="flavour"
+          [attr.aria-invalid]="showOrderError('flavour')"
+          [attr.aria-describedby]="showOrderError('flavour') ? 'order-flavour-error' : null"
+        >
+          <option value="">Choose a flavour</option>
+          @for (flavour of flavours; track flavour) {
+            <option [value]="flavour">{{ flavour }}</option>
+          }
+        </select>
+        @if (showOrderError('flavour')) {
+          <small id="order-flavour-error" class="field-error" role="alert">
+            {{ orderErrorMessage('flavour') }}
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="order-size">Size (kg)</label>
+        <input
+          id="order-size"
+          type="number"
+          step="any"
+          [min]="config.minSizeKg"
+          [max]="config.maxSizeKg"
+          formControlName="sizeKg"
+          [attr.aria-invalid]="showOrderError('sizeKg')"
+          [attr.aria-describedby]="
+            showOrderError('sizeKg') ? 'order-size-error' : isBigOrder ? 'order-size-hint' : null
+          "
+        />
+        @if (isBigOrder) {
+          <small id="order-size-hint" class="field-hint">
+            This is a big order. Confirm the details with the customer.
+          </small>
+        }
+        @if (showOrderError('sizeKg')) {
+          <small id="order-size-error" class="field-error" role="alert">
+            {{ orderErrorMessage('sizeKg') }}
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="order-delivery-date">Delivery date</label>
+        <input
+          id="order-delivery-date"
+          type="date"
+          formControlName="deliveryDate"
+          [attr.aria-invalid]="showOrderError('deliveryDate')"
+          [attr.aria-describedby]="
+            showOrderError('deliveryDate') ? 'order-delivery-date-error' : null
+          "
+        />
+        @if (showOrderError('deliveryDate')) {
+          <small id="order-delivery-date-error" class="field-error" role="alert">
+            {{ orderErrorMessage('deliveryDate') }}
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="order-town">Delivery town</label>
+        <select
+          id="order-town"
+          formControlName="deliveryTown"
+          [attr.aria-invalid]="showOrderError('deliveryTown')"
+          [attr.aria-describedby]="showOrderError('deliveryTown') ? 'order-town-error' : null"
+        >
+          <option value="">Choose a town</option>
+          @for (town of deliveryTowns; track town) {
+            <option [value]="town">{{ town }}</option>
+          }
+        </select>
+        @if (showOrderError('deliveryTown')) {
+          <small id="order-town-error" class="field-error" role="alert">
+            {{ orderErrorMessage('deliveryTown') }}
+          </small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="order-status">Status</label>
+        <select id="order-status" formControlName="status">
+          @for (status of orderStatuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="order-price">Price</label>
+        <input
+          id="order-price"
+          type="number"
+          min="0"
+          step="any"
+          formControlName="price"
+          [attr.aria-invalid]="showPriceRequiredError()"
+          [attr.aria-describedby]="showPriceRequiredError() ? 'order-price-error' : null"
+        />
+        @if (showPriceRequiredError()) {
+          <small id="order-price-error" class="field-error" role="alert">
+            Add the price before marking an order Delivered.
+          </small>
+        }
+      </div>
+      <button type="submit" class="action-button">Add order</button>
+    </form>
   </section>
 </main>

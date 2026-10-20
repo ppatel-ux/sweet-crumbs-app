@@ -3,7 +3,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #fffaf1 0%, #f6f3ff 100%);
   color: #1f2937;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .page-shell {
@@ -72,7 +72,9 @@ h1 {
   color: white;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .action-button:disabled {
@@ -155,6 +157,56 @@ h1 {
   font-weight: 700;
 }
 
+.form-section form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.form-field {
+  display: grid;
+  gap: 7px;
+}
+
+.form-field label {
+  font-weight: 700;
+  color: #342d4a;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d9d2ee;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+}
+
+.form-field textarea {
+  resize: vertical;
+}
+
+.field-error {
+  color: #a32020;
+  font-weight: 600;
+}
+
+.field-hint {
+  color: #5b4b82;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  margin: 0;
+  color: #17633b;
+  font-weight: 700;
+}
+
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
@@ -170,6 +222,10 @@ h1 {
 
 @media (max-width: 620px) {
   .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section form {
     grid-template-columns: 1fr;
   }
 }
