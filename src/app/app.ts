@@ -1,13 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HighlightDirective } from './highlight';
 import { TeamCardComponent } from './team-card/team-card';
-
-export interface TeamMember {
-  name: string;
-  job: string;
-  covers: string;
-}
+import { TeamMember } from './models/team-member';
+import { TeamService } from './services/team.service';
 
 @Component({
   selector: 'app-root',
@@ -17,12 +13,8 @@ export interface TeamMember {
   templateUrl: './app.html',
 })
 export class AppComponent {
-  team: TeamMember[] = [
-    { name: 'Meera Joshi', job: 'Founder and Sales Head', covers: 'Everything' },
-    { name: 'Anil Verma', job: 'Sales Rep', covers: 'Northfield' },
-    { name: 'Sara Khan', job: 'Sales Rep', covers: 'Southbay' },
-    { name: 'Ravi Nair', job: 'Customer Support', covers: 'Complaints from both towns' },
-  ];
+  private readonly teamService = inject(TeamService);
+  team = this.teamService.getAll();
 
   selectedMember: TeamMember | null = null;
   favoriteMember: TeamMember | null = null;
@@ -78,14 +70,14 @@ export class AppComponent {
   }
 
   private updateSelectedMember(updatedMember: TeamMember): void {
-    this.team = this.team.map((member) =>
-      member.covers === updatedMember.covers ? updatedMember : member,
-    );
-
-    if (this.selectedMember?.covers === updatedMember.covers) {
-      this.selectedMember = updatedMember;
+    const currentMember = this.selectedMember;
+    if (!currentMember) {
+      return;
     }
 
+    this.teamService.update(currentMember, updatedMember);
+
+    this.selectedMember = updatedMember;
     if (this.favoriteMember?.covers === updatedMember.covers) {
       this.favoriteMember = updatedMember;
     }

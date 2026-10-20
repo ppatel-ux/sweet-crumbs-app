@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { CardShellComponent } from '../card-shell/card-shell';
-import { TeamMember } from '../app';
+import { TeamMember } from '../models/team-member';
 
 @Component({
   selector: 'app-team-card',
