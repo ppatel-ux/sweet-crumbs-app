@@ -1,13 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
 import { TeamCardComponent } from './team-card/team-card';
-
-export interface TeamMember {
-  name: string;
-  job: string;
-  covers: string;
-}
+import { TeamMember } from './models/team-member';
+import { Order } from './models/order';
+import { OrderService } from './services/order.service';
+import { TeamService } from './services/team.service';
 
 @Component({
   selector: 'app-root',
@@ -17,12 +16,11 @@ export interface TeamMember {
   templateUrl: './app.html',
 })
 export class AppComponent {
-  team: TeamMember[] = [
-    { name: 'Meera Joshi', job: 'Founder and Sales Head', covers: 'Everything' },
-    { name: 'Anil Verma', job: 'Sales Rep', covers: 'Northfield' },
-    { name: 'Sara Khan', job: 'Sales Rep', covers: 'Southbay' },
-    { name: 'Ravi Nair', job: 'Customer Support', covers: 'Complaints from both towns' },
-  ];
+  private readonly teamService = inject(TeamService);
+  private readonly orderService = inject(OrderService);
+  private readonly activityLog = inject(ActivityLogService);
+  team = this.teamService.getAll();
+  orders: Order[] = this.orderService.getAll();
 
   selectedMember: TeamMember | null = null;
   favoriteMember: TeamMember | null = null;
@@ -38,8 +36,13 @@ export class AppComponent {
     return this.team.filter((member) => member.name.toLowerCase().includes(term));
   }
 
+  get recentActivities(): string[] {
+    return this.activityLog.getAll().slice(0, 5);
+  }
+
   selectMember(member: TeamMember): void {
     this.selectedMember = member;
+    this.activityLog.add(`Card selected: ${member.name}`);
   }
 
   setFavorite(member: TeamMember): void {
@@ -78,17 +81,18 @@ export class AppComponent {
   }
 
   private updateSelectedMember(updatedMember: TeamMember): void {
-    this.team = this.team.map((member) =>
-      member.covers === updatedMember.covers ? updatedMember : member,
-    );
-
-    if (this.selectedMember?.covers === updatedMember.covers) {
-      this.selectedMember = updatedMember;
+    const currentMember = this.selectedMember;
+    if (!currentMember) {
+      return;
     }
 
+    this.teamService.update(currentMember, updatedMember);
+
+    this.selectedMember = updatedMember;
     if (this.favoriteMember?.covers === updatedMember.covers) {
       this.favoriteMember = updatedMember;
     }
+    this.activityLog.add(`Team member updated: ${updatedMember.name}`);
   }
 }
 
