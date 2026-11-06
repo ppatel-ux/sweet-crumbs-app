@@ -1,11 +1,13 @@
 :host {
   display: block;
+  height: 100%;
   border-radius: 16px;
   background-color: #ffffff;
 }
 
 .team-card-shell {
   display: block;
+  height: 100%;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
