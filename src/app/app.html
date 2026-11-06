@@ -1,6 +1,7 @@
 <main class="page-shell">
   <header class="page-header">
     <h1>Sweet Crumbs team</h1>
+    <p class="last-updated">Last updated: {{ lastUpdated$ | async | date: 'mediumTime' }}</p>
     <div class="status-row">
       <span class="status-pill"
         >Selected:
@@ -47,6 +48,15 @@
     <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
   </div>
 
+  <div class="date-style-control">
+    <label for="date-format">Date style</label>
+    <select id="date-format" [(ngModel)]="dateFormat">
+      @for (format of dateFormats; track format.value) {
+        <option [value]="format.value">{{ format.label }}</option>
+      }
+    </select>
+  </div>
+
   <div class="results-count">Showing {{ filteredMembers.length }} of {{ team.length }}</div>
 
   @if (selectedMember === null) {
@@ -59,6 +69,7 @@
       @for (member of filteredMembers; track member.covers) {
         <app-team-card
           [member]="member"
+          [dateFormat]="dateFormat"
           [isSelected]="selectedMember?.covers === member.covers"
           [isFavorite]="favoriteMember?.covers === member.covers"
           [appHighlight]="getHighlightColor(member)"

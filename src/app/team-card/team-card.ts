@@ -9,7 +9,7 @@ import {
   SimpleChanges,
   inject,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
+import { CurrencyPipe, DatePipe, NgTemplateOutlet, PercentPipe } from '@angular/common';
 import { CardShellComponent } from '../card-shell/card-shell';
 import { TeamMember } from '../models/team-member';
 import { ActivityLogService } from '../services/activity-log.service';
@@ -18,7 +18,7 @@ import { CardClicksService } from '../services/card-clicks.service';
 @Component({
   selector: 'app-team-card',
   standalone: true,
-  imports: [NgTemplateOutlet, CardShellComponent],
+  imports: [NgTemplateOutlet, CardShellComponent, DatePipe, CurrencyPipe, PercentPipe],
   // Each card's injector owns its counter; without this, a root-provided counter would be shared.
   providers: [CardClicksService],
   styleUrl: './team-card.scss',
@@ -33,6 +33,7 @@ export class TeamCardComponent implements OnInit, OnChanges {
   @Input() isSelected = false;
   @Input() isFavorite = false;
   @Input() highlightColor = '#fff3cd';
+  @Input() dateFormat = 'mediumDate';
 
   @Output() favoriteSelected = new EventEmitter<TeamMember>();
   @Output() cardSelected = new EventEmitter<TeamMember>();

@@ -1,8 +1,9 @@
 import { Component, DestroyRef, inject } from '@angular/core';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import { interval, map, startWith } from 'rxjs';
 import { APP_CONFIG } from './app-config';
 import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
@@ -23,7 +24,14 @@ import { noPastDate, nonBlank, priceNeededToDeliver } from './validators/order.v
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [TeamCardComponent, HighlightDirective, FormsModule, ReactiveFormsModule],
+  imports: [
+    TeamCardComponent,
+    HighlightDirective,
+    AsyncPipe,
+    DatePipe,
+    FormsModule,
+    ReactiveFormsModule,
+  ],
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
@@ -35,6 +43,16 @@ export class AppComponent {
   private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
   orders: Order[] = this.orderService.getAll();
+  readonly lastUpdated$ = interval(1000).pipe(
+    startWith(0),
+    map(() => new Date()),
+  );
+  dateFormat = 'mediumDate';
+  readonly dateFormats = [
+    { label: 'Short', value: 'shortDate' },
+    { label: 'Medium', value: 'mediumDate' },
+    { label: 'Long', value: 'longDate' },
+  ];
   readonly flavours = FLAVOURS;
   readonly deliveryTowns = DELIVERY_TOWNS;
   readonly orderStatuses = ORDER_STATUSES;

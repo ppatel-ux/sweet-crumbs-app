@@ -37,15 +37,24 @@
     ></ng-container>
     <ng-container
       [ngTemplateOutlet]="detailRow"
-      [ngTemplateOutletContext]="{ label: 'Joined', value: member.joinedOn }"
+      [ngTemplateOutletContext]="{
+        label: 'Joined',
+        value: (member.joinedOn | date: dateFormat),
+      }"
     ></ng-container>
     <ng-container
       [ngTemplateOutlet]="detailRow"
-      [ngTemplateOutletContext]="{ label: 'Monthly bonus', value: member.monthlyBonus }"
+      [ngTemplateOutletContext]="{
+        label: 'Monthly bonus',
+        value: (member.monthlyBonus | currency: 'INR'),
+      }"
     ></ng-container>
     <ng-container
       [ngTemplateOutlet]="detailRow"
-      [ngTemplateOutletContext]="{ label: 'Target achieved', value: member.targetAchieved }"
+      [ngTemplateOutletContext]="{
+        label: 'Target achieved',
+        value: (member.targetAchieved | percent: '1.0-0'),
+      }"
     ></ng-container>
   </div>
 

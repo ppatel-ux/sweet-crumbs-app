@@ -46,7 +46,7 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Sweet Crumbs team');
   });
 
-  it('stores the supplied details and displays the raw values on each card', () => {
+  it('stores the supplied details and formats values on each card', () => {
     const team = TestBed.inject(TeamService).getAll();
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
@@ -65,8 +65,42 @@ describe('App', () => {
     ]);
 
     const firstCard = fixture.nativeElement.querySelector('app-team-card') as HTMLElement;
-    expect(firstCard.textContent).toContain('25000.5');
-    expect(firstCard.textContent).toContain('0.92');
+    expect(firstCard.textContent).toContain('Apr 15, 2019');
+    expect(firstCard.textContent).toContain('₹25,000.50');
+    expect(firstCard.textContent).toContain('92%');
+    expect(fixture.nativeElement.textContent).toContain('105%');
+  });
+
+  it('changes the joined date style on every card', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.componentInstance.dateFormat = 'longDate';
+    fixture.detectChanges();
+
+    const cards = Array.from(
+      fixture.nativeElement.querySelectorAll('app-team-card'),
+    ) as HTMLElement[];
+    expect(
+      cards.map((card) =>
+        card.textContent?.match(/(?:April|August|February|June) \d+, \d{4}/)?.[0],
+      ),
+    ).toEqual(['April 15, 2019', 'August 1, 2022', 'February 20, 2023', 'June 10, 2024']);
+  });
+
+  it('offers short, medium, and long date styles and shows the live clock', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const options = Array.from(
+      fixture.nativeElement.querySelectorAll('#date-format option'),
+    ) as HTMLOptionElement[];
+
+    expect(options.map((option) => option.textContent?.trim())).toEqual([
+      'Short',
+      'Medium',
+      'Long',
+    ]);
+    expect(fixture.nativeElement.querySelector('.last-updated')?.textContent).toContain(
+      'Last updated:',
+    );
   });
 
   it('renders every sample order and marks the two big orders', async () => {
