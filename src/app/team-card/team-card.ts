@@ -14,11 +14,12 @@ import { CardShellComponent } from '../card-shell/card-shell';
 import { TeamMember } from '../models/team-member';
 import { ActivityLogService } from '../services/activity-log.service';
 import { CardClicksService } from '../services/card-clicks.service';
+import { TruncatePipe } from '../pipes/truncate-pipe';
 
 @Component({
   selector: 'app-team-card',
   standalone: true,
-  imports: [NgTemplateOutlet, CardShellComponent, DatePipe, CurrencyPipe, PercentPipe],
+  imports: [NgTemplateOutlet, CardShellComponent, DatePipe, CurrencyPipe, PercentPipe, TruncatePipe],
   // Each card's injector owns its counter; without this, a root-provided counter would be shared.
   providers: [CardClicksService],
   styleUrl: './team-card.scss',

@@ -56,6 +56,10 @@
         value: (member.targetAchieved | percent: '1.0-0'),
       }"
     ></ng-container>
+    <div class="detail-row bio-row">
+      <span class="detail-label">Bio</span>
+      <span class="detail-value">{{ member.bio | truncate }}</span>
+    </div>
   </div>
 
   <div class="team-card__footer" card-footer>

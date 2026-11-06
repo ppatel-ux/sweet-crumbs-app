@@ -90,6 +90,14 @@
   font-weight: 600;
 }
 
+.bio-row {
+  align-items: flex-start;
+}
+
+.bio-row .detail-value {
+  max-width: 70%;
+}
+
 .team-card__footer {
   margin-top: 18px;
 }
