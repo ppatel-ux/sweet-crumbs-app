@@ -35,6 +35,18 @@
       [ngTemplateOutlet]="detailRow"
       [ngTemplateOutletContext]="{ label: 'Covers', value: member.covers }"
     ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{ label: 'Joined', value: member.joinedOn }"
+    ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{ label: 'Monthly bonus', value: member.monthlyBonus }"
+    ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{ label: 'Target achieved', value: member.targetAchieved }"
+    ></ng-container>
   </div>
 
   <div class="team-card__footer" card-footer>

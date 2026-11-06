@@ -4,6 +4,7 @@ import { NgForm } from '@angular/forms';
 import { App } from './app';
 import { APP_CONFIG } from './app-config';
 import { ActivityLogService } from './services/activity-log.service';
+import { TeamService } from './services/team.service';
 
 function futureDeliveryDate(): string {
   const date = new Date();
@@ -43,6 +44,29 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Sweet Crumbs team');
+  });
+
+  it('stores the supplied details and displays the raw values on each card', () => {
+    const team = TestBed.inject(TeamService).getAll();
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(team.map((member) => [
+      member.joinedOn.getFullYear(),
+      member.joinedOn.getMonth() + 1,
+      member.joinedOn.getDate(),
+      member.monthlyBonus,
+      member.targetAchieved,
+    ])).toEqual([
+      [2019, 4, 15, 25000.5, 0.92],
+      [2022, 8, 1, 12500, 0.78],
+      [2023, 2, 20, 15750.75, 1.05],
+      [2024, 6, 10, 8200.25, 0.86],
+    ]);
+
+    const firstCard = fixture.nativeElement.querySelector('app-team-card') as HTMLElement;
+    expect(firstCard.textContent).toContain('25000.5');
+    expect(firstCard.textContent).toContain('0.92');
   });
 
   it('renders every sample order and marks the two big orders', async () => {
