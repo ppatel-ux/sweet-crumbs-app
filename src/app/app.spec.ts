@@ -103,6 +103,44 @@ describe('App', () => {
     );
   });
 
+  it('adds a team member immediately with a new array reference', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const originalTeam = app.team;
+
+    app.addTeamMember();
+    fixture.detectChanges();
+
+    expect(app.team).toHaveLength(5);
+    expect(app.team).not.toBe(originalTeam);
+    expect(fixture.nativeElement.textContent).toContain('New team member 5');
+  });
+
+  it('filters the added member by name', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.addTeamMember();
+    app.searchTerm = 'new team member';
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('app-team-card')).toHaveLength(1);
+    expect(fixture.nativeElement.textContent).toContain('New team member 5');
+  });
+
+  it('updates the team array when a member name changes', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const originalTeam = app.team;
+    app.selectMember(app.team[0]);
+    app.newName = 'Meera Joshi Updated';
+
+    app.changeSelectedName();
+    fixture.detectChanges();
+
+    expect(app.team).not.toBe(originalTeam);
+    expect(fixture.nativeElement.textContent).toContain('Meera Joshi Updated');
+  });
+
   it('renders every sample order and marks the two big orders', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

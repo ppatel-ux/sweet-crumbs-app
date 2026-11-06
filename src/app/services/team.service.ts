@@ -46,12 +46,20 @@ export class TeamService {
     return this.team;
   }
 
-  update(currentMember: TeamMember, updatedMember: TeamMember): void {
+  add(member: TeamMember): TeamMember[] {
+    this.team = [...this.team, member];
+    return this.team;
+  }
+
+  update(currentMember: TeamMember, updatedMember: TeamMember): TeamMember[] {
     const index = this.team.findIndex((member) => member.covers === currentMember.covers);
     if (index === -1) {
       throw new Error(`Team member "${currentMember.name}" could not be found.`);
     }
 
-    this.team[index] = updatedMember;
+    this.team = this.team.map((member, memberIndex) =>
+      memberIndex === index ? updatedMember : member,
+    );
+    return this.team;
   }
 }
