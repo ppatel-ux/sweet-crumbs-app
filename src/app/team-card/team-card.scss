@@ -109,6 +109,25 @@
   font-size: 0.875rem;
 }
 
+.copy-button {
+  width: 100%;
+  margin-bottom: 8px;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-message {
+  display: block;
+  margin-bottom: 8px;
+  color: #4c4b6a;
+  font-size: 0.875rem;
+}
+
 .favorite-button {
   width: 100%;
   border: 0;

@@ -141,6 +141,30 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Meera Joshi Updated');
   });
 
+  it('copies a summary with a date formatted by DatePipe', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const copyButton = fixture.nativeElement.querySelector(
+      '.copy-button',
+    ) as HTMLButtonElement;
+
+    copyButton.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(writeText).toHaveBeenCalledWith(
+      'Meera Joshi, Founder and Sales Head, joined 15 Apr 2019',
+    );
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Summary copied.',
+    );
+  });
+
   it('renders every sample order and marks the two big orders', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
