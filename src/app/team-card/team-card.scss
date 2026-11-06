@@ -90,6 +90,14 @@
   font-weight: 600;
 }
 
+.bio-row {
+  align-items: flex-start;
+}
+
+.bio-row .detail-value {
+  max-width: 70%;
+}
+
 .team-card__footer {
   margin-top: 18px;
 }
@@ -98,6 +106,25 @@
   display: block;
   margin-bottom: 10px;
   color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.copy-button {
+  width: 100%;
+  margin-bottom: 8px;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-message {
+  display: block;
+  margin-bottom: 8px;
+  color: #4c4b6a;
   font-size: 0.875rem;
 }
 

@@ -4,6 +4,7 @@ import { NgForm } from '@angular/forms';
 import { App } from './app';
 import { APP_CONFIG } from './app-config';
 import { ActivityLogService } from './services/activity-log.service';
+import { TeamService } from './services/team.service';
 
 function futureDeliveryDate(): string {
   const date = new Date();
@@ -43,6 +44,125 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Sweet Crumbs team');
+  });
+
+  it('stores the supplied details and formats values on each card', () => {
+    const team = TestBed.inject(TeamService).getAll();
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(team.map((member) => [
+      member.joinedOn.getFullYear(),
+      member.joinedOn.getMonth() + 1,
+      member.joinedOn.getDate(),
+      member.monthlyBonus,
+      member.targetAchieved,
+    ])).toEqual([
+      [2019, 4, 15, 25000.5, 0.92],
+      [2022, 8, 1, 12500, 0.78],
+      [2023, 2, 20, 15750.75, 1.05],
+      [2024, 6, 10, 8200.25, 0.86],
+    ]);
+
+    const firstCard = fixture.nativeElement.querySelector('app-team-card') as HTMLElement;
+    expect(firstCard.textContent).toContain('Apr 15, 2019');
+    expect(firstCard.textContent).toContain('₹25,000.50');
+    expect(firstCard.textContent).toContain('92%');
+    expect(fixture.nativeElement.textContent).toContain('105%');
+  });
+
+  it('changes the joined date style on every card', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.componentInstance.dateFormat = 'longDate';
+    fixture.detectChanges();
+
+    const cards = Array.from(
+      fixture.nativeElement.querySelectorAll('app-team-card'),
+    ) as HTMLElement[];
+    expect(
+      cards.map((card) =>
+        card.textContent?.match(/(?:April|August|February|June) \d+, \d{4}/)?.[0],
+      ),
+    ).toEqual(['April 15, 2019', 'August 1, 2022', 'February 20, 2023', 'June 10, 2024']);
+  });
+
+  it('offers short, medium, and long date styles and shows the live clock', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const options = Array.from(
+      fixture.nativeElement.querySelectorAll('#date-format option'),
+    ) as HTMLOptionElement[];
+
+    expect(options.map((option) => option.textContent?.trim())).toEqual([
+      'Short',
+      'Medium',
+      'Long',
+    ]);
+    expect(fixture.nativeElement.querySelector('.last-updated')?.textContent).toContain(
+      'Last updated:',
+    );
+  });
+
+  it('adds a team member immediately with a new array reference', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const originalTeam = app.team;
+
+    app.addTeamMember();
+    fixture.detectChanges();
+
+    expect(app.team).toHaveLength(5);
+    expect(app.team).not.toBe(originalTeam);
+    expect(fixture.nativeElement.textContent).toContain('New team member 5');
+  });
+
+  it('filters the added member by name', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.addTeamMember();
+    app.searchTerm = 'new team member';
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('app-team-card')).toHaveLength(1);
+    expect(fixture.nativeElement.textContent).toContain('New team member 5');
+  });
+
+  it('updates the team array when a member name changes', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const originalTeam = app.team;
+    app.selectMember(app.team[0]);
+    app.newName = 'Meera Joshi Updated';
+
+    app.changeSelectedName();
+    fixture.detectChanges();
+
+    expect(app.team).not.toBe(originalTeam);
+    expect(fixture.nativeElement.textContent).toContain('Meera Joshi Updated');
+  });
+
+  it('copies a summary with a date formatted by DatePipe', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const copyButton = fixture.nativeElement.querySelector(
+      '.copy-button',
+    ) as HTMLButtonElement;
+
+    copyButton.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(writeText).toHaveBeenCalledWith(
+      'Meera Joshi, Founder and Sales Head, joined 15 Apr 2019',
+    );
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Summary copied.',
+    );
   });
 
   it('renders every sample order and marks the two big orders', async () => {

@@ -35,10 +35,39 @@
       [ngTemplateOutlet]="detailRow"
       [ngTemplateOutletContext]="{ label: 'Covers', value: member.covers }"
     ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{
+        label: 'Joined',
+        value: (member.joinedOn | date: dateFormat),
+      }"
+    ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{
+        label: 'Monthly bonus',
+        value: (member.monthlyBonus | currency: 'INR'),
+      }"
+    ></ng-container>
+    <ng-container
+      [ngTemplateOutlet]="detailRow"
+      [ngTemplateOutletContext]="{
+        label: 'Target achieved',
+        value: (member.targetAchieved | percent: '1.0-0'),
+      }"
+    ></ng-container>
+    <div class="detail-row bio-row">
+      <span class="detail-label">Bio</span>
+      <span class="detail-value">{{ member.bio | truncate }}</span>
+    </div>
   </div>
 
   <div class="team-card__footer" card-footer>
     <span class="click-count">Clicks: {{ clickCount }}</span>
+    <button type="button" class="copy-button" (click)="copySummary($event)">Copy summary</button>
+    @if (copyMessage()) {
+      <span class="copy-message" role="status">{{ copyMessage() }}</span>
+    }
     <button type="button" class="favorite-button" (click)="onFavoriteClick($event)">
       {{ isFavorite ? 'Favorited' : 'Mark as favorite' }}
     </button>

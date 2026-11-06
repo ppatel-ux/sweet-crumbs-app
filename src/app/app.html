@@ -1,6 +1,7 @@
 <main class="page-shell">
   <header class="page-header">
     <h1>Sweet Crumbs team</h1>
+    <p class="last-updated">Last updated: {{ lastUpdated$ | async | date: 'mediumTime' }}</p>
     <div class="status-row">
       <span class="status-pill"
         >Selected:
@@ -45,20 +46,33 @@
       Change name
     </button>
     <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
+    <button type="button" class="action-button" (click)="addTeamMember()">Add team member</button>
   </div>
 
-  <div class="results-count">Showing {{ filteredMembers.length }} of {{ team.length }}</div>
+  <div class="date-style-control">
+    <label for="date-format">Date style</label>
+    <select id="date-format" [(ngModel)]="dateFormat">
+      @for (format of dateFormats; track format.value) {
+        <option [value]="format.value">{{ format.label }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="results-count">
+    Showing {{ (team | filterByName: searchTerm).length }} of {{ team.length }}
+  </div>
 
   @if (selectedMember === null) {
     <p class="selection-message">Select a card first and change nothing.</p>
   }
 
-  @if (filteredMembers.length > 0) {
+  @if ((team | filterByName: searchTerm).length > 0) {
     <div class="cards-grid">
       <!-- Covers is unique for each teammate and does not change when names or jobs are edited. -->
-      @for (member of filteredMembers; track member.covers) {
+      @for (member of team | filterByName: searchTerm; track member.covers) {
         <app-team-card
           [member]="member"
+          [dateFormat]="dateFormat"
           [isSelected]="selectedMember?.covers === member.covers"
           [isFavorite]="favoriteMember?.covers === member.covers"
           [appHighlight]="getHighlightColor(member)"

@@ -8,19 +8,21 @@ import {
   Output,
   SimpleChanges,
   inject,
+  signal,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
+import { CurrencyPipe, DatePipe, NgTemplateOutlet, PercentPipe } from '@angular/common';
 import { CardShellComponent } from '../card-shell/card-shell';
 import { TeamMember } from '../models/team-member';
 import { ActivityLogService } from '../services/activity-log.service';
 import { CardClicksService } from '../services/card-clicks.service';
+import { TruncatePipe } from '../pipes/truncate-pipe';
 
 @Component({
   selector: 'app-team-card',
   standalone: true,
-  imports: [NgTemplateOutlet, CardShellComponent],
+  imports: [NgTemplateOutlet, CardShellComponent, DatePipe, CurrencyPipe, PercentPipe, TruncatePipe],
   // Each card's injector owns its counter; without this, a root-provided counter would be shared.
-  providers: [CardClicksService],
+  providers: [CardClicksService, DatePipe],
   styleUrl: './team-card.scss',
   templateUrl: './team-card.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,14 +30,18 @@ import { CardClicksService } from '../services/card-clicks.service';
 export class TeamCardComponent implements OnInit, OnChanges {
   private readonly activityLog = inject(ActivityLogService);
   private readonly cardClicks = inject(CardClicksService);
+  private readonly datePipe = inject(DatePipe);
 
   @Input() member!: TeamMember;
   @Input() isSelected = false;
   @Input() isFavorite = false;
   @Input() highlightColor = '#fff3cd';
+  @Input() dateFormat = 'mediumDate';
 
   @Output() favoriteSelected = new EventEmitter<TeamMember>();
   @Output() cardSelected = new EventEmitter<TeamMember>();
+
+  readonly copyMessage = signal('');
 
   get clickCount(): number {
     return this.cardClicks.getCount();
@@ -59,5 +65,23 @@ export class TeamCardComponent implements OnInit, OnChanges {
     this.cardClicks.increment();
     this.activityLog.add(`Favorite chosen: ${this.member.name}`);
     this.favoriteSelected.emit(this.member);
+  }
+
+  async copySummary(event: Event): Promise<void> {
+    event.stopPropagation();
+    const joinedDate = this.datePipe.transform(this.member.joinedOn, 'dd MMM yyyy');
+    if (joinedDate === null) {
+      this.copyMessage.set(`Could not format the joined date for ${this.member.name}.`);
+      return;
+    }
+
+    const summary = `${this.member.name}, ${this.member.job}, joined ${joinedDate}`;
+    try {
+      await navigator.clipboard.writeText(summary);
+      this.copyMessage.set('Summary copied.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.copyMessage.set(`Could not copy summary: ${message}`);
+    }
   }
 }

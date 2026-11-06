@@ -1,12 +1,14 @@
 import { Component, DestroyRef, inject } from '@angular/core';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import { interval, map, startWith } from 'rxjs';
 import { APP_CONFIG } from './app-config';
 import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
 import { TeamCardComponent } from './team-card/team-card';
+import { FilterByNamePipe } from './pipes/filter-by-name.pipe';
 import {
   DELIVERY_TOWNS,
   FLAVOURS,
@@ -23,7 +25,15 @@ import { noPastDate, nonBlank, priceNeededToDeliver } from './validators/order.v
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [TeamCardComponent, HighlightDirective, FormsModule, ReactiveFormsModule],
+  imports: [
+    TeamCardComponent,
+    HighlightDirective,
+    FilterByNamePipe,
+    AsyncPipe,
+    DatePipe,
+    FormsModule,
+    ReactiveFormsModule,
+  ],
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
@@ -35,6 +45,16 @@ export class AppComponent {
   private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
   orders: Order[] = this.orderService.getAll();
+  readonly lastUpdated$ = interval(1000).pipe(
+    startWith(0),
+    map(() => new Date()),
+  );
+  dateFormat = 'mediumDate';
+  readonly dateFormats = [
+    { label: 'Short', value: 'shortDate' },
+    { label: 'Medium', value: 'mediumDate' },
+    { label: 'Long', value: 'longDate' },
+  ];
   readonly flavours = FLAVOURS;
   readonly deliveryTowns = DELIVERY_TOWNS;
   readonly orderStatuses = ORDER_STATUSES;
@@ -79,15 +99,6 @@ export class AppComponent {
   searchTerm = '';
   newName = '';
 
-  get filteredMembers(): TeamMember[] {
-    const term = this.searchTerm.trim().toLowerCase();
-    if (!term) {
-      return this.team;
-    }
-
-    return this.team.filter((member) => member.name.toLowerCase().includes(term));
-  }
-
   get recentActivities(): string[] {
     return this.activityLog.getAll().slice(0, 5);
   }
@@ -114,6 +125,22 @@ export class AppComponent {
 
   showEnquiryError(control: NgModel): boolean {
     return control.touched === true && control.invalid === true;
+  }
+
+  addTeamMember(): void {
+    const number = this.team.length + 1;
+    const newPerson: TeamMember = {
+      name: `New team member ${number}`,
+      job: 'Team Member',
+      covers: `New teammate ${number}`,
+      joinedOn: new Date(),
+      monthlyBonus: 0,
+      targetAchieved: 0,
+      bio: 'A new member of the Sweet Crumbs team.',
+    };
+
+    // Replace the array so the pure filter pipe notices that the team changed.
+    this.team = this.teamService.add(newPerson);
   }
 
   submitOrder(): void {
@@ -232,7 +259,7 @@ export class AppComponent {
       return;
     }
 
-    this.teamService.update(currentMember, updatedMember);
+    this.team = this.teamService.update(currentMember, updatedMember);
 
     this.selectedMember = updatedMember;
     if (this.favoriteMember?.covers === updatedMember.covers) {
