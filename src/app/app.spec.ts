@@ -1,12 +1,13 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgForm } from '@angular/forms';
-import { of, Subject, throwError } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { App } from './app';
 import { APP_CONFIG } from './app-config';
 import { Order } from './models/order';
 import { ActivityLogService } from './services/activity-log.service';
+import { ErrorMessageService } from './services/error-message.service';
+import { LoadingService } from './services/loading.service';
 import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
 
@@ -269,7 +270,7 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelectorAll('.big-order-badge')).toHaveLength(2);
   });
 
-  it('shows loading and stores a helpful message when the order request fails', () => {
+  it('clears the order list and finishes loading when the order request fails', () => {
     const ordersResponse = new Subject<Order[]>();
     TestBed.overrideProvider(OrderService, {
       useValue: { getAll: vi.fn(() => ordersResponse) },
@@ -283,7 +284,34 @@ describe('App', () => {
     fixture.detectChanges(false);
 
     expect(fixture.componentInstance.isLoadingOrders).toBe(false);
-    expect(fixture.componentInstance.orderLoadError).toContain('Check that the server is running');
+    expect(fixture.componentInstance.orders).toEqual([]);
+  });
+
+  it('shows a shared API error at the top of the page', () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(ErrorMessageService).show('Not allowed. The server rejected the token.');
+    fixture.detectChanges();
+
+    const banner = fixture.nativeElement.querySelector('.server-error-banner') as HTMLElement;
+    expect(banner.textContent).toContain('Not allowed. The server rejected the token.');
+    expect(
+      fixture.nativeElement.querySelector(
+        'section[aria-labelledby="new-order-heading"] .server-error-banner',
+      ),
+    ).toBeNull();
+  });
+
+  it('shows the shared loading indicator while requests are active', () => {
+    const fixture = TestBed.createComponent(App);
+    const loading = TestBed.inject(LoadingService);
+
+    loading.startRequest();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Talking to the server…');
+
+    loading.finishRequest();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Talking to the server…');
   });
 
   it('requests server-side filters when the orders are searched', () => {
@@ -378,46 +406,6 @@ describe('App', () => {
       price: null,
     });
     expect(app.recentActivities[0]).toBe('Order created: SCO-0006');
-  });
-
-  it('shows server validation details under the form', () => {
-    const createOrder = vi.fn(() =>
-      throwError(
-        () =>
-          new HttpErrorResponse({
-            status: 400,
-            error: {
-              message: 'Validation failed.',
-              errors: [{ field: 'sizeKg', message: 'Size must be between 0.5 and 10 kg.' }],
-            },
-          }),
-      ),
-    );
-    TestBed.overrideProvider(OrderService, {
-      useValue: { getAll: () => of(sampleOrders), create: createOrder },
-    });
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    app.orderForm.setValue({
-      accountName: 'New Customer',
-      flavour: 'Vanilla',
-      sizeKg: 12,
-      deliveryDate: futureDeliveryDate(),
-      deliveryTown: 'Southbay',
-      status: 'New',
-      price: null,
-    });
-    app.orderForm.controls.sizeKg.clearValidators();
-    app.orderForm.controls.sizeKg.updateValueAndValidity();
-
-    app.submitOrder();
-    fixture.detectChanges();
-
-    expect(createOrder).toHaveBeenCalled();
-    const errorMessage = fixture.nativeElement.querySelector(
-      'section[aria-labelledby="new-order-heading"] [role="alert"]',
-    ) as HTMLElement;
-    expect(errorMessage.textContent).toContain('Size must be between 0.5 and 10 kg.');
   });
 
   it('updates a row with the status returned by the server', () => {

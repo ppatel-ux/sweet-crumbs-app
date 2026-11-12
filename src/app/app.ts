@@ -1,6 +1,5 @@
 import { Component, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -22,43 +21,9 @@ import {
 import { TeamMember } from './models/team-member';
 import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
+import { ErrorMessageService } from './services/error-message.service';
+import { LoadingService } from './services/loading.service';
 import { noPastDate, nonBlank, priceNeededToDeliver } from './validators/order.validators';
-
-function getOrderApiErrorMessage(error: unknown): string {
-  if (!(error instanceof HttpErrorResponse)) {
-    return 'The server could not complete the request. Please try again.';
-  }
-
-  const body: unknown = error.error;
-  if (
-    typeof body !== 'object' ||
-    body === null ||
-    !('message' in body) ||
-    typeof body.message !== 'string'
-  ) {
-    return 'The server could not complete the request. Please try again.';
-  }
-
-  const details =
-    'errors' in body && Array.isArray(body.errors)
-      ? body.errors
-          .map((item: unknown) => {
-            if (
-              typeof item === 'object' &&
-              item !== null &&
-              'message' in item &&
-              typeof item.message === 'string'
-            ) {
-              return item.message;
-            }
-            return '';
-          })
-          .filter((message) => message !== '')
-          .join(' ')
-      : '';
-
-  return details ? `${body.message} ${details}` : body.message;
-}
 
 @Component({
   selector: 'app-root',
@@ -80,15 +45,15 @@ export class AppComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly teamService = inject(TeamService);
   private readonly orderService = inject(OrderService);
+  readonly errorMessages = inject(ErrorMessageService);
+  readonly loading = inject(LoadingService);
   private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
   orders: Order[] = [];
   isLoadingOrders = false;
-  orderLoadError = '';
   orderSearchTerm = '';
   selectedTown: DeliveryTown | '' = '';
   isSavingOrder = false;
-  orderApiError = '';
   readonly pendingOrderIds = new Set<string>();
   readonly lastUpdated$ = interval(1000).pipe(
     startWith(0),
@@ -195,7 +160,6 @@ export class AppComponent {
       return;
     }
 
-    this.orderApiError = '';
     this.orderForm.controls.accountName.setValue(this.orderForm.controls.accountName.value.trim());
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
@@ -239,9 +203,7 @@ export class AppComponent {
             price: null,
           });
         },
-        error: (error: unknown) => {
-          this.orderApiError = getOrderApiErrorMessage(error);
-        },
+        error: () => this.handleOrderRequestError(),
       });
   }
 
@@ -251,7 +213,6 @@ export class AppComponent {
     }
 
     this.pendingOrderIds.add(order.id);
-    this.orderApiError = '';
     this.orderService
       .changeStatus(order.id, status)
       .pipe(
@@ -264,9 +225,7 @@ export class AppComponent {
             currentOrder.id === updatedOrder.id ? updatedOrder : currentOrder,
           );
         },
-        error: (error: unknown) => {
-          this.orderApiError = getOrderApiErrorMessage(error);
-        },
+        error: () => this.handleOrderRequestError(),
       });
   }
 
@@ -279,7 +238,6 @@ export class AppComponent {
     }
 
     this.pendingOrderIds.add(order.id);
-    this.orderApiError = '';
     this.orderService
       .delete(order.id)
       .pipe(
@@ -290,9 +248,7 @@ export class AppComponent {
         next: () => {
           this.orders = this.orders.filter((currentOrder) => currentOrder.id !== order.id);
         },
-        error: (error: unknown) => {
-          this.orderApiError = getOrderApiErrorMessage(error);
-        },
+        error: () => this.handleOrderRequestError(),
       });
   }
 
@@ -302,21 +258,25 @@ export class AppComponent {
     }
 
     this.isLoadingOrders = true;
-    this.orderLoadError = '';
     this.orderService
       .getAll(this.orderSearchTerm, this.selectedTown)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => (this.isLoadingOrders = false)),
+      )
       .subscribe({
         next: (orders) => {
           this.orders = orders;
-          this.isLoadingOrders = false;
         },
         error: () => {
           this.orders = [];
-          this.orderLoadError = 'Could not load orders. Check that the server is running and try again.';
-          this.isLoadingOrders = false;
+          this.handleOrderRequestError();
         },
       });
+  }
+
+  private handleOrderRequestError(): void {
+    // The error interceptor has already shown the friendly message in the page banner.
   }
 
   showOrderError(controlName: keyof typeof this.orderForm.controls): boolean {

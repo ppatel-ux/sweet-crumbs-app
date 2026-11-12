@@ -1,10 +1,11 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { APP_CONFIG } from '../app-config';
+import { authInterceptor } from '../interceptors/auth.interceptor';
 import { NewOrder, Order } from '../models/order';
 import { OrderService } from './order.service';
 
@@ -14,7 +15,7 @@ describe('OrderService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         { provide: APP_CONFIG, useValue: { apiBaseUrl } },
       ],
@@ -25,7 +26,7 @@ describe('OrderService', () => {
     TestBed.inject(HttpTestingController).verify();
   });
 
-  it('sends the token and filters as query parameters', () => {
+  it('filters as query parameters and receives auth from the interceptor', () => {
     const service = TestBed.inject(OrderService);
     const httpTesting = TestBed.inject(HttpTestingController);
     let response: Order[] | undefined;
