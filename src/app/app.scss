@@ -89,6 +89,28 @@ h1 {
   flex-basis: 200px;
 }
 
+.order-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.order-filter-field {
+  color: #342d4a;
+  font-weight: 700;
+}
+
+.order-feedback {
+  margin: 16px 0;
+  font-weight: 600;
+}
+
+.error-message {
+  color: #a32020;
+}
+
 .action-button {
   border: 0;
   border-radius: 10px;

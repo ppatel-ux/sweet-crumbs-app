@@ -101,49 +101,89 @@
 
   <section class="orders-section" aria-labelledby="orders-heading">
     <h2 id="orders-heading">Orders ({{ orders.length }})</h2>
-    <div class="table-scroll">
-      <table class="orders-table">
-        <thead>
-          <tr>
-            <th scope="col">Order</th>
-            <th scope="col">Customer</th>
-            <th scope="col">Flavour</th>
-            <th scope="col">Size (kg)</th>
-            <th scope="col">Delivery date</th>
-            <th scope="col">Town</th>
-            <th scope="col">Status</th>
-            <th scope="col">Price</th>
-            <th scope="col">Order size</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (order of orders; track order.orderNumber) {
-            <tr [class.big-order-row]="order.bigOrder">
-              <td>{{ order.orderNumber }}</td>
-              <td>{{ order.accountName }}</td>
-              <td>{{ order.flavour }}</td>
-              <td>{{ order.sizeKg }}</td>
-              <td>{{ order.deliveryDate }}</td>
-              <td>{{ order.deliveryTown }}</td>
-              <td>{{ order.status }}</td>
-              <td>{{ order.price ?? '—' }}</td>
-              <td>
-                @if (order.bigOrder) {
-                  <span class="big-order-badge">Big order</span>
-                } @else {
-                  <span>Standard</span>
-                }
-              </td>
+    <form class="order-filters" (ngSubmit)="loadOrders()">
+      <label class="order-filter-field" for="order-search">Customer name</label>
+      <input
+        id="order-search"
+        class="search-input"
+        type="search"
+        name="orderSearchTerm"
+        [(ngModel)]="orderSearchTerm"
+        placeholder="Search customers"
+      />
+      <label class="order-filter-field" for="order-town-filter">Town</label>
+      <select
+        id="order-town-filter"
+        class="search-input"
+        name="selectedTown"
+        [(ngModel)]="selectedTown"
+      >
+        <option value="">All</option>
+        @for (town of deliveryTowns; track town) {
+          <option [value]="town">{{ town }}</option>
+        }
+      </select>
+      <button type="submit" class="action-button" [disabled]="isLoadingOrders">
+        Search orders
+      </button>
+    </form>
+
+    @if (isLoadingOrders) {
+      <p class="order-feedback" role="status">Loading orders…</p>
+    } @else if (orderLoadError) {
+      <p class="order-feedback error-message" role="alert">{{ orderLoadError }}</p>
+    } @else if (orders.length > 0) {
+      <div class="table-scroll">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th scope="col">Order</th>
+              <th scope="col">Customer</th>
+              <th scope="col">Flavour</th>
+              <th scope="col">Size (kg)</th>
+              <th scope="col">Delivery date</th>
+              <th scope="col">Town</th>
+              <th scope="col">Status</th>
+              <th scope="col">Price</th>
+              <th scope="col">Order size</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (order of orders; track order.id) {
+              <tr [class.big-order-row]="order.bigOrder">
+                <td>{{ order.orderNumber }}</td>
+                <td>{{ order.accountName }}</td>
+                <td>{{ order.flavour }}</td>
+                <td>{{ order.sizeKg }}</td>
+                <td>{{ order.deliveryDate }}</td>
+                <td>{{ order.deliveryTown }}</td>
+                <td>{{ order.status }}</td>
+                <td>{{ order.price ?? '—' }}</td>
+                <td>
+                  @if (order.bigOrder) {
+                    <span class="big-order-badge">Big order</span>
+                  } @else {
+                    <span>Standard</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="empty-state">No orders found.</p>
+    }
   </section>
 
   <section class="form-section" aria-labelledby="enquiry-heading">
     <h2 id="enquiry-heading">Customer enquiry</h2>
-    <form #enquiryForm="ngForm" (ngSubmit)="submitEnquiry(enquiryForm)" novalidate>
+    <form
+      id="enquiry-form"
+      #enquiryForm="ngForm"
+      (ngSubmit)="submitEnquiry(enquiryForm)"
+      novalidate
+    >
       <div class="form-field">
         <label for="enquiry-name">Name</label>
         <input
@@ -365,6 +405,9 @@
         }
       </div>
       <button type="submit" class="action-button">Add order</button>
+      @if (orderSubmitMessage) {
+        <p class="field-hint" role="status">{{ orderSubmitMessage }}</p>
+      }
     </form>
   </section>
 </main>

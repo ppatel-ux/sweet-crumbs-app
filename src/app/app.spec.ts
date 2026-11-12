@@ -1,10 +1,81 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgForm } from '@angular/forms';
+import { of, Subject } from 'rxjs';
 import { App } from './app';
 import { APP_CONFIG } from './app-config';
+import { Order } from './models/order';
 import { ActivityLogService } from './services/activity-log.service';
+import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
+
+const sampleOrders: Order[] = [
+  {
+    id: '1',
+    orderNumber: 'SCO-0001',
+    accountName: 'Hotel Bluebell',
+    flavour: 'Chocolate',
+    sizeKg: 2,
+    deliveryDate: '2026-11-20',
+    deliveryTown: 'Northfield',
+    status: 'New',
+    price: 1800,
+    bigOrder: false,
+    webReference: null,
+  },
+  {
+    id: '2',
+    orderNumber: 'SCO-0002',
+    accountName: 'Sunrise School',
+    flavour: 'Red Velvet',
+    sizeKg: 3.5,
+    deliveryDate: '2026-11-22',
+    deliveryTown: 'Southbay',
+    status: 'Baking',
+    price: 2900,
+    bigOrder: false,
+    webReference: null,
+  },
+  {
+    id: '3',
+    orderNumber: 'SCO-0003',
+    accountName: 'TechPark Cafe',
+    flavour: 'Vanilla',
+    sizeKg: 1,
+    deliveryDate: '2026-11-19',
+    deliveryTown: 'Northfield',
+    status: 'New',
+    price: 950,
+    bigOrder: false,
+    webReference: null,
+  },
+  {
+    id: '4',
+    orderNumber: 'SCO-0004',
+    accountName: 'Harbour Gym',
+    flavour: 'Butterscotch',
+    sizeKg: 6,
+    deliveryDate: '2026-11-25',
+    deliveryTown: 'Southbay',
+    status: 'New',
+    price: 4200,
+    bigOrder: true,
+    webReference: null,
+  },
+  {
+    id: '5',
+    orderNumber: 'SCO-0005',
+    accountName: 'Hotel Bluebell',
+    flavour: 'Chocolate',
+    sizeKg: 5,
+    deliveryDate: '2026-11-18',
+    deliveryTown: 'Northfield',
+    status: 'Out for Delivery',
+    price: 3600,
+    bigOrder: true,
+    webReference: null,
+  },
+];
 
 function futureDeliveryDate(): string {
   const date = new Date();
@@ -28,6 +99,10 @@ describe('App', () => {
             bigOrderKg: 5,
             apiBaseUrl: 'http://localhost:3000/api',
           },
+        },
+        {
+          provide: OrderService,
+          useValue: { getAll: vi.fn(() => of(sampleOrders)) },
         },
       ],
     }).compileComponents();
@@ -174,6 +249,36 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelectorAll('.big-order-badge')).toHaveLength(2);
   });
 
+  it('shows loading and stores a helpful message when the order request fails', () => {
+    const ordersResponse = new Subject<Order[]>();
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: vi.fn(() => ordersResponse) },
+    });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges(false);
+
+    expect(fixture.nativeElement.textContent).toContain('Loading orders');
+
+    ordersResponse.error(new Error('Server unavailable'));
+    fixture.detectChanges(false);
+
+    expect(fixture.componentInstance.isLoadingOrders).toBe(false);
+    expect(fixture.componentInstance.orderLoadError).toContain('Check that the server is running');
+  });
+
+  it('requests server-side filters when the orders are searched', () => {
+    const getAll = vi.fn(() => of(sampleOrders));
+    TestBed.overrideProvider(OrderService, { useValue: { getAll } });
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.orderSearchTerm = 'Hotel';
+    app.selectedTown = 'Northfield';
+
+    app.loadOrders();
+
+    expect(getAll).toHaveBeenLastCalledWith('Hotel', 'Northfield');
+  });
+
   it('does not add an invalid order and marks every control touched on submit', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
@@ -212,7 +317,7 @@ describe('App', () => {
     expect(app.orders).toHaveLength(orderCount);
   });
 
-  it('adds a valid order immediately and resets the order form to its defaults', () => {
+  it('keeps a valid order in the form until server-side saving is added', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     app.orderForm.setValue({
@@ -227,22 +332,9 @@ describe('App', () => {
 
     app.submitOrder();
 
-    expect(app.orders).toHaveLength(6);
-    expect(app.orders[5]).toMatchObject({
-      orderNumber: 'SCO-0006',
-      accountName: 'New Customer',
-      bigOrder: false,
-    });
-    expect(app.orderForm.getRawValue()).toEqual({
-      accountName: '',
-      flavour: '',
-      sizeKg: null,
-      deliveryDate: '',
-      deliveryTown: '',
-      status: 'New',
-      price: null,
-    });
-    expect(app.recentActivities[0]).toBe('Order SCO-0006 added');
+    expect(app.orders).toHaveLength(5);
+    expect(app.orderForm.controls.accountName.value).toBe('New Customer');
+    expect(app.orderSubmitMessage).toContain('added in the next step');
   });
 
   it('requires a price for Delivered orders and clears the error after a price is entered', () => {
@@ -274,7 +366,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
-    const enquiryForm = fixture.debugElement.query(By.directive(NgForm)).injector.get(NgForm);
+    const enquiryForm = fixture.debugElement.query(By.css('#enquiry-form')).injector.get(NgForm);
     enquiryForm.form.controls['name'].setValue('Meera Joshi');
     enquiryForm.form.controls['email'].setValue('meera@example.com');
     enquiryForm.form.controls['message'].setValue('Can I order a cake?');
@@ -301,7 +393,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
-    const enquiryForm = fixture.debugElement.query(By.directive(NgForm)).injector.get(NgForm);
+    const enquiryForm = fixture.debugElement.query(By.css('#enquiry-form')).injector.get(NgForm);
     enquiryForm.form.controls['name'].setValue('   ');
     enquiryForm.form.controls['email'].setValue('meera@example.com');
     enquiryForm.form.controls['message'].setValue('   ');

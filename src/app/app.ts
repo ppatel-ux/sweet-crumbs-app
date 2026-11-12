@@ -12,7 +12,7 @@ import { FilterByNamePipe } from './pipes/filter-by-name.pipe';
 import {
   DELIVERY_TOWNS,
   FLAVOURS,
-  NewOrder,
+  DeliveryTown,
   Order,
   OrderStatus,
   ORDER_STATUSES,
@@ -44,7 +44,12 @@ export class AppComponent {
   private readonly orderService = inject(OrderService);
   private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
-  orders: Order[] = this.orderService.getAll();
+  orders: Order[] = [];
+  isLoadingOrders = false;
+  orderLoadError = '';
+  orderSearchTerm = '';
+  selectedTown: DeliveryTown | '' = '';
+  orderSubmitMessage = '';
   readonly lastUpdated$ = interval(1000).pipe(
     startWith(0),
     map(() => new Date()),
@@ -92,6 +97,8 @@ export class AppComponent {
       .subscribe((sizeKg) => {
         this.isBigOrder = sizeKg !== null && sizeKg >= this.config.bigOrderKg;
       });
+
+    this.loadOrders();
   }
 
   selectedMember: TeamMember | null = null;
@@ -144,38 +151,37 @@ export class AppComponent {
   }
 
   submitOrder(): void {
+    this.orderSubmitMessage = '';
     this.orderForm.controls.accountName.setValue(this.orderForm.controls.accountName.value.trim());
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
       return;
     }
 
-    const values = this.orderForm.getRawValue();
-    if (!values.flavour || !values.deliveryTown || values.sizeKg === null) {
-      this.orderForm.markAllAsTouched();
+    this.orderSubmitMessage = 'Saving orders to the server will be added in the next step.';
+  }
+
+  loadOrders(): void {
+    if (this.isLoadingOrders) {
       return;
     }
 
-    const order: NewOrder = {
-      accountName: values.accountName.trim(),
-      flavour: values.flavour,
-      sizeKg: values.sizeKg,
-      deliveryDate: values.deliveryDate,
-      deliveryTown: values.deliveryTown,
-      status: values.status,
-      ...(values.price !== null ? { price: values.price } : {}),
-    };
-    this.orderService.add(order);
-    this.orders = this.orderService.getAll();
-    this.orderForm.reset({
-      accountName: '',
-      flavour: '',
-      sizeKg: null,
-      deliveryDate: '',
-      deliveryTown: '',
-      status: 'New',
-      price: null,
-    });
+    this.isLoadingOrders = true;
+    this.orderLoadError = '';
+    this.orderService
+      .getAll(this.orderSearchTerm, this.selectedTown)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (orders) => {
+          this.orders = orders;
+          this.isLoadingOrders = false;
+        },
+        error: () => {
+          this.orders = [];
+          this.orderLoadError = 'Could not load orders. Check that the server is running and try again.';
+          this.isLoadingOrders = false;
+        },
+      });
   }
 
   showOrderError(controlName: keyof typeof this.orderForm.controls): boolean {
