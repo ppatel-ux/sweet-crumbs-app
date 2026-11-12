@@ -26,4 +26,12 @@ export interface Order {
   webReference?: string | null;
 }
 
-export type NewOrder = Omit<Order, 'id' | 'orderNumber' | 'bigOrder'>;
+export interface NewOrder {
+  accountName: string;
+  flavour: Flavour;
+  sizeKg: number;
+  deliveryDate: string;
+  deliveryTown: DeliveryTown;
+  status: OrderStatus;
+  price: number | null;
+}
