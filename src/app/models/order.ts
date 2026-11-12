@@ -13,6 +13,7 @@ export type DeliveryTown = (typeof DELIVERY_TOWNS)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export interface Order {
+  id: string;
   orderNumber: string;
   accountName: string;
   flavour: Flavour;
@@ -20,9 +21,17 @@ export interface Order {
   deliveryDate: string;
   deliveryTown: DeliveryTown;
   status: OrderStatus;
-  price?: number;
+  price?: number | null;
   bigOrder: boolean;
-  webReference?: string;
+  webReference?: string | null;
 }
 
-export type NewOrder = Omit<Order, 'orderNumber' | 'bigOrder'>;
+export interface NewOrder {
+  accountName: string;
+  flavour: Flavour;
+  sizeKg: number;
+  deliveryDate: string;
+  deliveryTown: DeliveryTown;
+  status: OrderStatus;
+  price: number | null;
+}

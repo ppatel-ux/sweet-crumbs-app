@@ -3,7 +3,7 @@ import { AsyncPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval, map, startWith } from 'rxjs';
+import { finalize, interval, map, startWith } from 'rxjs';
 import { APP_CONFIG } from './app-config';
 import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
@@ -12,6 +12,7 @@ import { FilterByNamePipe } from './pipes/filter-by-name.pipe';
 import {
   DELIVERY_TOWNS,
   FLAVOURS,
+  DeliveryTown,
   NewOrder,
   Order,
   OrderStatus,
@@ -20,6 +21,8 @@ import {
 import { TeamMember } from './models/team-member';
 import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
+import { ErrorMessageService } from './services/error-message.service';
+import { LoadingService } from './services/loading.service';
 import { noPastDate, nonBlank, priceNeededToDeliver } from './validators/order.validators';
 
 @Component({
@@ -42,9 +45,16 @@ export class AppComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly teamService = inject(TeamService);
   private readonly orderService = inject(OrderService);
+  readonly errorMessages = inject(ErrorMessageService);
+  readonly loading = inject(LoadingService);
   private readonly activityLog = inject(ActivityLogService);
   team = this.teamService.getAll();
-  orders: Order[] = this.orderService.getAll();
+  orders: Order[] = [];
+  isLoadingOrders = false;
+  orderSearchTerm = '';
+  selectedTown: DeliveryTown | '' = '';
+  isSavingOrder = false;
+  readonly pendingOrderIds = new Set<string>();
   readonly lastUpdated$ = interval(1000).pipe(
     startWith(0),
     map(() => new Date()),
@@ -92,6 +102,8 @@ export class AppComponent {
       .subscribe((sizeKg) => {
         this.isBigOrder = sizeKg !== null && sizeKg >= this.config.bigOrderKg;
       });
+
+    this.loadOrders();
   }
 
   selectedMember: TeamMember | null = null;
@@ -144,6 +156,10 @@ export class AppComponent {
   }
 
   submitOrder(): void {
+    if (this.isSavingOrder) {
+      return;
+    }
+
     this.orderForm.controls.accountName.setValue(this.orderForm.controls.accountName.value.trim());
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
@@ -156,26 +172,111 @@ export class AppComponent {
       return;
     }
 
-    const order: NewOrder = {
-      accountName: values.accountName.trim(),
+    const newOrder: NewOrder = {
+      accountName: values.accountName,
       flavour: values.flavour,
       sizeKg: values.sizeKg,
       deliveryDate: values.deliveryDate,
       deliveryTown: values.deliveryTown,
       status: values.status,
-      ...(values.price !== null ? { price: values.price } : {}),
+      price: values.price,
     };
-    this.orderService.add(order);
-    this.orders = this.orderService.getAll();
-    this.orderForm.reset({
-      accountName: '',
-      flavour: '',
-      sizeKg: null,
-      deliveryDate: '',
-      deliveryTown: '',
-      status: 'New',
-      price: null,
-    });
+
+    this.isSavingOrder = true;
+    this.orderService
+      .create(newOrder)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => (this.isSavingOrder = false)),
+      )
+      .subscribe({
+        next: (createdOrder) => {
+          this.orders = [...this.orders, createdOrder];
+          this.activityLog.add(`Order created: ${createdOrder.orderNumber}`);
+          this.orderForm.reset({
+            accountName: '',
+            flavour: '',
+            sizeKg: null,
+            deliveryDate: '',
+            deliveryTown: '',
+            status: 'New',
+            price: null,
+          });
+        },
+        error: () => this.handleOrderRequestError(),
+      });
+  }
+
+  changeOrderStatus(order: Order, status: OrderStatus): void {
+    if (this.pendingOrderIds.has(order.id)) {
+      return;
+    }
+
+    this.pendingOrderIds.add(order.id);
+    this.orderService
+      .changeStatus(order.id, status)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.pendingOrderIds.delete(order.id)),
+      )
+      .subscribe({
+        next: (updatedOrder) => {
+          this.orders = this.orders.map((currentOrder) =>
+            currentOrder.id === updatedOrder.id ? updatedOrder : currentOrder,
+          );
+        },
+        error: () => this.handleOrderRequestError(),
+      });
+  }
+
+  deleteOrder(order: Order): void {
+    if (
+      this.pendingOrderIds.has(order.id) ||
+      !window.confirm(`Delete ${order.orderNumber}?`)
+    ) {
+      return;
+    }
+
+    this.pendingOrderIds.add(order.id);
+    this.orderService
+      .delete(order.id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.pendingOrderIds.delete(order.id)),
+      )
+      .subscribe({
+        next: () => {
+          this.orders = this.orders.filter((currentOrder) => currentOrder.id !== order.id);
+        },
+        error: () => this.handleOrderRequestError(),
+      });
+  }
+
+  loadOrders(): void {
+    if (this.isLoadingOrders) {
+      return;
+    }
+
+    this.isLoadingOrders = true;
+    this.orderService
+      .getAll(this.orderSearchTerm, this.selectedTown)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => (this.isLoadingOrders = false)),
+      )
+      .subscribe({
+        next: (orders) => {
+          this.orders = orders;
+        },
+        error: () => {
+          this.orders = [];
+          this.handleOrderRequestError();
+        },
+      });
+  }
+
+  private handleOrderRequestError(): void {
+    // The error interceptor has already shown the friendly message in the page banner.
   }
 
   showOrderError(controlName: keyof typeof this.orderForm.controls): boolean {

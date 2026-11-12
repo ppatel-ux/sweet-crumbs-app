@@ -1,10 +1,95 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgForm } from '@angular/forms';
+import { of, Subject } from 'rxjs';
 import { App } from './app';
 import { APP_CONFIG } from './app-config';
+import { Order } from './models/order';
 import { ActivityLogService } from './services/activity-log.service';
+import { ErrorMessageService } from './services/error-message.service';
+import { LoadingService } from './services/loading.service';
+import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
+
+const sampleOrders: Order[] = [
+  {
+    id: '1',
+    orderNumber: 'SCO-0001',
+    accountName: 'Hotel Bluebell',
+    flavour: 'Chocolate',
+    sizeKg: 2,
+    deliveryDate: '2026-11-20',
+    deliveryTown: 'Northfield',
+    status: 'New',
+    price: 1800,
+    bigOrder: false,
+    webReference: null,
+  },
+  {
+    id: '2',
+    orderNumber: 'SCO-0002',
+    accountName: 'Sunrise School',
+    flavour: 'Red Velvet',
+    sizeKg: 3.5,
+    deliveryDate: '2026-11-22',
+    deliveryTown: 'Southbay',
+    status: 'Baking',
+    price: 2900,
+    bigOrder: false,
+    webReference: null,
+  },
+  {
+    id: '3',
+    orderNumber: 'SCO-0003',
+    accountName: 'TechPark Cafe',
+    flavour: 'Vanilla',
+    sizeKg: 1,
+    deliveryDate: '2026-11-19',
+    deliveryTown: 'Northfield',
+    status: 'New',
+    price: 950,
+    bigOrder: false,
+    webReference: null,
+  },
+  {
+    id: '4',
+    orderNumber: 'SCO-0004',
+    accountName: 'Harbour Gym',
+    flavour: 'Butterscotch',
+    sizeKg: 6,
+    deliveryDate: '2026-11-25',
+    deliveryTown: 'Southbay',
+    status: 'New',
+    price: 4200,
+    bigOrder: true,
+    webReference: null,
+  },
+  {
+    id: '5',
+    orderNumber: 'SCO-0005',
+    accountName: 'Hotel Bluebell',
+    flavour: 'Chocolate',
+    sizeKg: 5,
+    deliveryDate: '2026-11-18',
+    deliveryTown: 'Northfield',
+    status: 'Out for Delivery',
+    price: 3600,
+    bigOrder: true,
+    webReference: null,
+  },
+];
+
+const createdOrder: Order = {
+  ...sampleOrders[0],
+  id: '6',
+  orderNumber: 'SCO-0006',
+  accountName: 'New Customer',
+  flavour: 'Vanilla',
+  sizeKg: 0.5,
+  deliveryDate: '2026-11-30',
+  deliveryTown: 'Southbay',
+  price: null,
+};
 
 function futureDeliveryDate(): string {
   const date = new Date();
@@ -29,8 +114,19 @@ describe('App', () => {
             apiBaseUrl: 'http://localhost:3000/api',
           },
         },
+        {
+          provide: OrderService,
+          useValue: {
+            getAll: vi.fn(() => of(sampleOrders)),
+            create: vi.fn(() => of(createdOrder)),
+          },
+        },
       ],
     }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should create the app', () => {
@@ -174,6 +270,63 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelectorAll('.big-order-badge')).toHaveLength(2);
   });
 
+  it('clears the order list and finishes loading when the order request fails', () => {
+    const ordersResponse = new Subject<Order[]>();
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: vi.fn(() => ordersResponse) },
+    });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges(false);
+
+    expect(fixture.nativeElement.textContent).toContain('Loading orders');
+
+    ordersResponse.error(new Error('Server unavailable'));
+    fixture.detectChanges(false);
+
+    expect(fixture.componentInstance.isLoadingOrders).toBe(false);
+    expect(fixture.componentInstance.orders).toEqual([]);
+  });
+
+  it('shows a shared API error at the top of the page', () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(ErrorMessageService).show('Not allowed. The server rejected the token.');
+    fixture.detectChanges();
+
+    const banner = fixture.nativeElement.querySelector('.server-error-banner') as HTMLElement;
+    expect(banner.textContent).toContain('Not allowed. The server rejected the token.');
+    expect(
+      fixture.nativeElement.querySelector(
+        'section[aria-labelledby="new-order-heading"] .server-error-banner',
+      ),
+    ).toBeNull();
+  });
+
+  it('shows the shared loading indicator while requests are active', () => {
+    const fixture = TestBed.createComponent(App);
+    const loading = TestBed.inject(LoadingService);
+
+    loading.startRequest();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Talking to the server…');
+
+    loading.finishRequest();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Talking to the server…');
+  });
+
+  it('requests server-side filters when the orders are searched', () => {
+    const getAll = vi.fn(() => of(sampleOrders));
+    TestBed.overrideProvider(OrderService, { useValue: { getAll } });
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.orderSearchTerm = 'Hotel';
+    app.selectedTown = 'Northfield';
+
+    app.loadOrders();
+
+    expect(getAll).toHaveBeenLastCalledWith('Hotel', 'Northfield');
+  });
+
   it('does not add an invalid order and marks every control touched on submit', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
@@ -212,14 +365,19 @@ describe('App', () => {
     expect(app.orders).toHaveLength(orderCount);
   });
 
-  it('adds a valid order immediately and resets the order form to its defaults', () => {
+  it('creates a valid order, resets the form, and logs the server order number', () => {
+    const createOrder = vi.fn(() => of(createdOrder));
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), create: createOrder },
+    });
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
+    const deliveryDate = futureDeliveryDate();
     app.orderForm.setValue({
       accountName: 'New Customer',
       flavour: 'Vanilla',
       sizeKg: 0.5,
-      deliveryDate: futureDeliveryDate(),
+      deliveryDate,
       deliveryTown: 'Southbay',
       status: 'New',
       price: null,
@@ -227,12 +385,17 @@ describe('App', () => {
 
     app.submitOrder();
 
-    expect(app.orders).toHaveLength(6);
-    expect(app.orders[5]).toMatchObject({
-      orderNumber: 'SCO-0006',
+    expect(createOrder).toHaveBeenCalledWith({
       accountName: 'New Customer',
-      bigOrder: false,
+      flavour: 'Vanilla',
+      sizeKg: 0.5,
+      deliveryDate,
+      deliveryTown: 'Southbay',
+      status: 'New',
+      price: null,
     });
+    expect(app.orders).toHaveLength(6);
+    expect(app.orders[5]).toEqual(createdOrder);
     expect(app.orderForm.getRawValue()).toEqual({
       accountName: '',
       flavour: '',
@@ -242,7 +405,45 @@ describe('App', () => {
       status: 'New',
       price: null,
     });
-    expect(app.recentActivities[0]).toBe('Order SCO-0006 added');
+    expect(app.recentActivities[0]).toBe('Order created: SCO-0006');
+  });
+
+  it('updates a row with the status returned by the server', () => {
+    const updatedOrder: Order = { ...sampleOrders[0], status: 'Baking' };
+    const changeStatus = vi.fn(() => of(updatedOrder));
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), changeStatus },
+    });
+    const app = TestBed.createComponent(App).componentInstance;
+
+    app.changeOrderStatus(sampleOrders[0], 'Baking');
+
+    expect(changeStatus).toHaveBeenCalledWith('1', 'Baking');
+    expect(app.orders[0]).toEqual(updatedOrder);
+  });
+
+  it('confirms deletion and removes the row only after the server responds', () => {
+    const response = new Subject<void>();
+    const deleteOrder = vi.fn(() => response);
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), delete: deleteOrder },
+    });
+    const app = TestBed.createComponent(App).componentInstance;
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValue(true);
+
+    app.deleteOrder(sampleOrders[2]);
+    expect(confirm).toHaveBeenCalledWith('Delete SCO-0003?');
+    expect(deleteOrder).not.toHaveBeenCalled();
+
+    app.deleteOrder(sampleOrders[2]);
+    expect(deleteOrder).toHaveBeenCalledWith('3');
+    expect(app.orders).toHaveLength(5);
+
+    response.next();
+    response.complete();
+
+    expect(app.orders).toHaveLength(4);
+    expect(app.orders.some((order) => order.id === '3')).toBe(false);
   });
 
   it('requires a price for Delivered orders and clears the error after a price is entered', () => {
@@ -274,7 +475,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
-    const enquiryForm = fixture.debugElement.query(By.directive(NgForm)).injector.get(NgForm);
+    const enquiryForm = fixture.debugElement.query(By.css('#enquiry-form')).injector.get(NgForm);
     enquiryForm.form.controls['name'].setValue('Meera Joshi');
     enquiryForm.form.controls['email'].setValue('meera@example.com');
     enquiryForm.form.controls['message'].setValue('Can I order a cake?');
@@ -301,7 +502,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
-    const enquiryForm = fixture.debugElement.query(By.directive(NgForm)).injector.get(NgForm);
+    const enquiryForm = fixture.debugElement.query(By.css('#enquiry-form')).injector.get(NgForm);
     enquiryForm.form.controls['name'].setValue('   ');
     enquiryForm.form.controls['email'].setValue('meera@example.com');
     enquiryForm.form.controls['message'].setValue('   ');

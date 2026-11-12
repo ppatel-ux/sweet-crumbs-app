@@ -1,80 +1,122 @@
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { APP_CONFIG, AppConfig } from '../app-config';
-import { ActivityLogService } from './activity-log.service';
+import { APP_CONFIG } from '../app-config';
+import { authInterceptor } from '../interceptors/auth.interceptor';
+import { NewOrder, Order } from '../models/order';
 import { OrderService } from './order.service';
 
-describe('OrderService', () => {
-  const defaultConfig: AppConfig = {
-    minSizeKg: 0.5,
-    maxSizeKg: 10,
-    bigOrderKg: 5,
-    apiBaseUrl: 'http://localhost:3000/api',
-  };
+const apiBaseUrl = 'http://localhost:3000/api';
 
+describe('OrderService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [{ provide: APP_CONFIG, useValue: defaultConfig }],
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        { provide: APP_CONFIG, useValue: { apiBaseUrl } },
+      ],
     });
   });
 
-  it('starts with the five specified orders and marks large sample orders', () => {
-    const orders = TestBed.inject(OrderService).getAll();
-
-    expect(orders.map((order) => order.orderNumber)).toEqual([
-      'SCO-0001',
-      'SCO-0002',
-      'SCO-0003',
-      'SCO-0004',
-      'SCO-0005',
-    ]);
-    expect(orders.filter((order) => order.bigOrder).map((order) => order.orderNumber)).toEqual([
-      'SCO-0004',
-      'SCO-0005',
-    ]);
+  afterEach(() => {
+    TestBed.inject(HttpTestingController).verify();
   });
 
-  it('generates consecutive padded order numbers and logs each order', () => {
+  it('filters as query parameters and receives auth from the interceptor', () => {
     const service = TestBed.inject(OrderService);
-    const activityLog = TestBed.inject(ActivityLogService);
-    const newOrder = {
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let response: Order[] | undefined;
+
+    service.getAll('  Hotel Bluebell  ', 'Northfield').subscribe((orders) => {
+      response = orders;
+    });
+
+    const request = httpTesting.expectOne(
+      `${apiBaseUrl}/orders?q=Hotel%20Bluebell&town=Northfield`,
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer sweetcrumbs-token');
+    request.flush([]);
+
+    expect(response).toEqual([]);
+  });
+
+  it('omits empty filters from the request', () => {
+    const service = TestBed.inject(OrderService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.getAll().subscribe();
+
+    const request = httpTesting.expectOne(`${apiBaseUrl}/orders`);
+    expect(request.request.params.keys()).toEqual([]);
+    request.flush([]);
+  });
+
+  it('creates an order with only the fields accepted by the server', () => {
+    const service = TestBed.inject(OrderService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const newOrder: NewOrder = {
       accountName: 'New Customer',
-      flavour: 'Chocolate' as const,
+      flavour: 'Chocolate',
       sizeKg: 5,
-      deliveryDate: '2026-10-30',
-      deliveryTown: 'Northfield' as const,
-      status: 'New' as const,
+      deliveryDate: '2026-11-30',
+      deliveryTown: 'Northfield',
+      status: 'New',
       price: 1800,
     };
+    const createdOrder: Order = {
+      ...newOrder,
+      id: '6',
+      orderNumber: 'SCO-0006',
+      bigOrder: true,
+      webReference: null,
+    };
+    let response: Order | undefined;
 
-    const first = service.add(newOrder);
-    const second = service.add({ ...newOrder, sizeKg: 0.5 });
+    service.create(newOrder).subscribe((order) => {
+      response = order;
+    });
 
-    expect(first.orderNumber).toBe('SCO-0006');
-    expect(first.bigOrder).toBe(true);
-    expect(second.orderNumber).toBe('SCO-0007');
-    expect(second.bigOrder).toBe(false);
-    expect(activityLog.getAll().slice(0, 2)).toEqual([
-      'Order SCO-0007 added',
-      'Order SCO-0006 added',
-    ]);
+    const request = httpTesting.expectOne(`${apiBaseUrl}/orders`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer sweetcrumbs-token');
+    expect(request.request.body).toEqual(newOrder);
+    request.flush(createdOrder);
+
+    expect(response).toEqual(createdOrder);
   });
 
-  it('uses the configured big-order threshold for seed and new orders', () => {
-    TestBed.overrideProvider(APP_CONFIG, {
-      useValue: { ...defaultConfig, bigOrderKg: 3 },
-    });
+  it('patches only the requested status', () => {
     const service = TestBed.inject(OrderService);
+    const httpTesting = TestBed.inject(HttpTestingController);
 
-    expect(service.getAll().find((order) => order.orderNumber === 'SCO-0002')?.bigOrder).toBe(true);
-    expect(
-      service.add({
-        accountName: 'Threshold Customer',
-        flavour: 'Vanilla',
-        sizeKg: 3,
-        deliveryDate: '2026-10-30',
-        deliveryTown: 'Southbay',
-        status: 'New',
-      }).bigOrder,
-    ).toBe(true);
+    service.changeStatus('3', 'Baking').subscribe();
+
+    const request = httpTesting.expectOne(`${apiBaseUrl}/orders/3`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer sweetcrumbs-token');
+    expect(request.request.body).toEqual({ status: 'Baking' });
+    request.flush({ id: '3', status: 'Baking' });
+  });
+
+  it('completes a delete after the server returns 204 with no body', () => {
+    const service = TestBed.inject(OrderService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let deleted = false;
+
+    service.delete('3').subscribe(() => {
+      deleted = true;
+    });
+
+    const request = httpTesting.expectOne(`${apiBaseUrl}/orders/3`);
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer sweetcrumbs-token');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(deleted).toBe(true);
   });
 });

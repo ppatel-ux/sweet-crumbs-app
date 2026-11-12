@@ -89,6 +89,40 @@ h1 {
   flex-basis: 200px;
 }
 
+.order-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.order-filter-field {
+  color: #342d4a;
+  font-weight: 700;
+}
+
+.order-feedback {
+  margin: 16px 0;
+  font-weight: 600;
+}
+
+.server-error-banner {
+  margin: 0 0 12px;
+  border: 1px solid #d88a8a;
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: #fff0f0;
+  color: #a32020;
+  font-weight: 700;
+}
+
+.server-loading-indicator {
+  margin: 0 0 12px;
+  color: #5b4b82;
+  font-weight: 700;
+}
+
 .action-button {
   border: 0;
   border-radius: 10px;
@@ -166,6 +200,23 @@ h1 {
 
 .orders-table th {
   color: #4c4b6a;
+}
+
+.orders-table select {
+  border: 1px solid #d9d2ee;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: white;
+  color: #1f2937;
+  font: inherit;
+}
+
+.orders-table .action-button {
+  padding: 8px 12px;
+}
+
+.delete-button {
+  background: #a32020;
 }
 
 .big-order-row {
