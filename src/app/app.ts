@@ -1,9 +1,10 @@
 import { Component, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval, map, startWith } from 'rxjs';
+import { finalize, interval, map, startWith } from 'rxjs';
 import { APP_CONFIG } from './app-config';
 import { ActivityLogService } from './services/activity-log.service';
 import { HighlightDirective } from './highlight';
@@ -13,6 +14,7 @@ import {
   DELIVERY_TOWNS,
   FLAVOURS,
   DeliveryTown,
+  NewOrder,
   Order,
   OrderStatus,
   ORDER_STATUSES,
@@ -21,6 +23,42 @@ import { TeamMember } from './models/team-member';
 import { OrderService } from './services/order.service';
 import { TeamService } from './services/team.service';
 import { noPastDate, nonBlank, priceNeededToDeliver } from './validators/order.validators';
+
+function getOrderApiErrorMessage(error: unknown): string {
+  if (!(error instanceof HttpErrorResponse)) {
+    return 'The server could not complete the request. Please try again.';
+  }
+
+  const body: unknown = error.error;
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    !('message' in body) ||
+    typeof body.message !== 'string'
+  ) {
+    return 'The server could not complete the request. Please try again.';
+  }
+
+  const details =
+    'errors' in body && Array.isArray(body.errors)
+      ? body.errors
+          .map((item: unknown) => {
+            if (
+              typeof item === 'object' &&
+              item !== null &&
+              'message' in item &&
+              typeof item.message === 'string'
+            ) {
+              return item.message;
+            }
+            return '';
+          })
+          .filter((message) => message !== '')
+          .join(' ')
+      : '';
+
+  return details ? `${body.message} ${details}` : body.message;
+}
 
 @Component({
   selector: 'app-root',
@@ -49,7 +87,9 @@ export class AppComponent {
   orderLoadError = '';
   orderSearchTerm = '';
   selectedTown: DeliveryTown | '' = '';
-  orderSubmitMessage = '';
+  isSavingOrder = false;
+  orderApiError = '';
+  readonly pendingOrderIds = new Set<string>();
   readonly lastUpdated$ = interval(1000).pipe(
     startWith(0),
     map(() => new Date()),
@@ -151,14 +191,109 @@ export class AppComponent {
   }
 
   submitOrder(): void {
-    this.orderSubmitMessage = '';
+    if (this.isSavingOrder) {
+      return;
+    }
+
+    this.orderApiError = '';
     this.orderForm.controls.accountName.setValue(this.orderForm.controls.accountName.value.trim());
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
       return;
     }
 
-    this.orderSubmitMessage = 'Saving orders to the server will be added in the next step.';
+    const values = this.orderForm.getRawValue();
+    if (!values.flavour || !values.deliveryTown || values.sizeKg === null) {
+      this.orderForm.markAllAsTouched();
+      return;
+    }
+
+    const newOrder: NewOrder = {
+      accountName: values.accountName,
+      flavour: values.flavour,
+      sizeKg: values.sizeKg,
+      deliveryDate: values.deliveryDate,
+      deliveryTown: values.deliveryTown,
+      status: values.status,
+      price: values.price,
+    };
+
+    this.isSavingOrder = true;
+    this.orderService
+      .create(newOrder)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => (this.isSavingOrder = false)),
+      )
+      .subscribe({
+        next: (createdOrder) => {
+          this.orders = [...this.orders, createdOrder];
+          this.activityLog.add(`Order created: ${createdOrder.orderNumber}`);
+          this.orderForm.reset({
+            accountName: '',
+            flavour: '',
+            sizeKg: null,
+            deliveryDate: '',
+            deliveryTown: '',
+            status: 'New',
+            price: null,
+          });
+        },
+        error: (error: unknown) => {
+          this.orderApiError = getOrderApiErrorMessage(error);
+        },
+      });
+  }
+
+  changeOrderStatus(order: Order, status: OrderStatus): void {
+    if (this.pendingOrderIds.has(order.id)) {
+      return;
+    }
+
+    this.pendingOrderIds.add(order.id);
+    this.orderApiError = '';
+    this.orderService
+      .changeStatus(order.id, status)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.pendingOrderIds.delete(order.id)),
+      )
+      .subscribe({
+        next: (updatedOrder) => {
+          this.orders = this.orders.map((currentOrder) =>
+            currentOrder.id === updatedOrder.id ? updatedOrder : currentOrder,
+          );
+        },
+        error: (error: unknown) => {
+          this.orderApiError = getOrderApiErrorMessage(error);
+        },
+      });
+  }
+
+  deleteOrder(order: Order): void {
+    if (
+      this.pendingOrderIds.has(order.id) ||
+      !window.confirm(`Delete ${order.orderNumber}?`)
+    ) {
+      return;
+    }
+
+    this.pendingOrderIds.add(order.id);
+    this.orderApiError = '';
+    this.orderService
+      .delete(order.id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.pendingOrderIds.delete(order.id)),
+      )
+      .subscribe({
+        next: () => {
+          this.orders = this.orders.filter((currentOrder) => currentOrder.id !== order.id);
+        },
+        error: (error: unknown) => {
+          this.orderApiError = getOrderApiErrorMessage(error);
+        },
+      });
   }
 
   loadOrders(): void {

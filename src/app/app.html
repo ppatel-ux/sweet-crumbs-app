@@ -146,6 +146,7 @@
               <th scope="col">Status</th>
               <th scope="col">Price</th>
               <th scope="col">Order size</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -157,7 +158,18 @@
                 <td>{{ order.sizeKg }}</td>
                 <td>{{ order.deliveryDate }}</td>
                 <td>{{ order.deliveryTown }}</td>
-                <td>{{ order.status }}</td>
+                <td>
+                  <select
+                    [ngModel]="order.status"
+                    (ngModelChange)="changeOrderStatus(order, $event)"
+                    [disabled]="pendingOrderIds.has(order.id)"
+                    [attr.aria-label]="'Status for ' + order.orderNumber"
+                  >
+                    @for (status of orderStatuses; track status) {
+                      <option [value]="status">{{ status }}</option>
+                    }
+                  </select>
+                </td>
                 <td>{{ order.price ?? '—' }}</td>
                 <td>
                   @if (order.bigOrder) {
@@ -165,6 +177,17 @@
                   } @else {
                     <span>Standard</span>
                   }
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="action-button delete-button"
+                    [disabled]="pendingOrderIds.has(order.id)"
+                    [attr.aria-label]="'Delete ' + order.orderNumber"
+                    (click)="deleteOrder(order)"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             }
@@ -404,9 +427,11 @@
           </small>
         }
       </div>
-      <button type="submit" class="action-button">Add order</button>
-      @if (orderSubmitMessage) {
-        <p class="field-hint" role="status">{{ orderSubmitMessage }}</p>
+      <button type="submit" class="action-button" [disabled]="isSavingOrder">
+        {{ isSavingOrder ? 'Saving…' : 'Add order' }}
+      </button>
+      @if (orderApiError) {
+        <p class="field-error" role="alert">{{ orderApiError }}</p>
       }
     </form>
   </section>

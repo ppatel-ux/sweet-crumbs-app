@@ -1,7 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgForm } from '@angular/forms';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { App } from './app';
 import { APP_CONFIG } from './app-config';
 import { Order } from './models/order';
@@ -77,6 +78,18 @@ const sampleOrders: Order[] = [
   },
 ];
 
+const createdOrder: Order = {
+  ...sampleOrders[0],
+  id: '6',
+  orderNumber: 'SCO-0006',
+  accountName: 'New Customer',
+  flavour: 'Vanilla',
+  sizeKg: 0.5,
+  deliveryDate: '2026-11-30',
+  deliveryTown: 'Southbay',
+  price: null,
+};
+
 function futureDeliveryDate(): string {
   const date = new Date();
   date.setDate(date.getDate() + 10);
@@ -102,10 +115,17 @@ describe('App', () => {
         },
         {
           provide: OrderService,
-          useValue: { getAll: vi.fn(() => of(sampleOrders)) },
+          useValue: {
+            getAll: vi.fn(() => of(sampleOrders)),
+            create: vi.fn(() => of(createdOrder)),
+          },
         },
       ],
     }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should create the app', () => {
@@ -317,14 +337,19 @@ describe('App', () => {
     expect(app.orders).toHaveLength(orderCount);
   });
 
-  it('keeps a valid order in the form until server-side saving is added', () => {
+  it('creates a valid order, resets the form, and logs the server order number', () => {
+    const createOrder = vi.fn(() => of(createdOrder));
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), create: createOrder },
+    });
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
+    const deliveryDate = futureDeliveryDate();
     app.orderForm.setValue({
       accountName: 'New Customer',
       flavour: 'Vanilla',
       sizeKg: 0.5,
-      deliveryDate: futureDeliveryDate(),
+      deliveryDate,
       deliveryTown: 'Southbay',
       status: 'New',
       price: null,
@@ -332,9 +357,105 @@ describe('App', () => {
 
     app.submitOrder();
 
+    expect(createOrder).toHaveBeenCalledWith({
+      accountName: 'New Customer',
+      flavour: 'Vanilla',
+      sizeKg: 0.5,
+      deliveryDate,
+      deliveryTown: 'Southbay',
+      status: 'New',
+      price: null,
+    });
+    expect(app.orders).toHaveLength(6);
+    expect(app.orders[5]).toEqual(createdOrder);
+    expect(app.orderForm.getRawValue()).toEqual({
+      accountName: '',
+      flavour: '',
+      sizeKg: null,
+      deliveryDate: '',
+      deliveryTown: '',
+      status: 'New',
+      price: null,
+    });
+    expect(app.recentActivities[0]).toBe('Order created: SCO-0006');
+  });
+
+  it('shows server validation details under the form', () => {
+    const createOrder = vi.fn(() =>
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: {
+              message: 'Validation failed.',
+              errors: [{ field: 'sizeKg', message: 'Size must be between 0.5 and 10 kg.' }],
+            },
+          }),
+      ),
+    );
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), create: createOrder },
+    });
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.orderForm.setValue({
+      accountName: 'New Customer',
+      flavour: 'Vanilla',
+      sizeKg: 12,
+      deliveryDate: futureDeliveryDate(),
+      deliveryTown: 'Southbay',
+      status: 'New',
+      price: null,
+    });
+    app.orderForm.controls.sizeKg.clearValidators();
+    app.orderForm.controls.sizeKg.updateValueAndValidity();
+
+    app.submitOrder();
+    fixture.detectChanges();
+
+    expect(createOrder).toHaveBeenCalled();
+    const errorMessage = fixture.nativeElement.querySelector(
+      'section[aria-labelledby="new-order-heading"] [role="alert"]',
+    ) as HTMLElement;
+    expect(errorMessage.textContent).toContain('Size must be between 0.5 and 10 kg.');
+  });
+
+  it('updates a row with the status returned by the server', () => {
+    const updatedOrder: Order = { ...sampleOrders[0], status: 'Baking' };
+    const changeStatus = vi.fn(() => of(updatedOrder));
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), changeStatus },
+    });
+    const app = TestBed.createComponent(App).componentInstance;
+
+    app.changeOrderStatus(sampleOrders[0], 'Baking');
+
+    expect(changeStatus).toHaveBeenCalledWith('1', 'Baking');
+    expect(app.orders[0]).toEqual(updatedOrder);
+  });
+
+  it('confirms deletion and removes the row only after the server responds', () => {
+    const response = new Subject<void>();
+    const deleteOrder = vi.fn(() => response);
+    TestBed.overrideProvider(OrderService, {
+      useValue: { getAll: () => of(sampleOrders), delete: deleteOrder },
+    });
+    const app = TestBed.createComponent(App).componentInstance;
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValue(true);
+
+    app.deleteOrder(sampleOrders[2]);
+    expect(confirm).toHaveBeenCalledWith('Delete SCO-0003?');
+    expect(deleteOrder).not.toHaveBeenCalled();
+
+    app.deleteOrder(sampleOrders[2]);
+    expect(deleteOrder).toHaveBeenCalledWith('3');
     expect(app.orders).toHaveLength(5);
-    expect(app.orderForm.controls.accountName.value).toBe('New Customer');
-    expect(app.orderSubmitMessage).toContain('added in the next step');
+
+    response.next();
+    response.complete();
+
+    expect(app.orders).toHaveLength(4);
+    expect(app.orders.some((order) => order.id === '3')).toBe(false);
   });
 
   it('requires a price for Delivered orders and clears the error after a price is entered', () => {

@@ -190,6 +190,23 @@ h1 {
   color: #4c4b6a;
 }
 
+.orders-table select {
+  border: 1px solid #d9d2ee;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: white;
+  color: #1f2937;
+  font: inherit;
+}
+
+.orders-table .action-button {
+  padding: 8px 12px;
+}
+
+.delete-button {
+  background: #a32020;
+}
+
 .big-order-row {
   background: #fff7dd;
 }
