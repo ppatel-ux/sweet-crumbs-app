@@ -1,0 +1,8 @@
+{
+  "name": "sweet-crumbs-server",
+  "version": "1.0.0",
+  "description": "Small training server for the Sweet Crumbs Order Desk",
+  "scripts": { "start": "node server.js" },
+  "license": "UNLICENSED",
+  "private": true
+}
