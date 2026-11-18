@@ -56,7 +56,7 @@ describe('OrderService', () => {
     request.flush([]);
   });
 
-  it('creates an order with only the fields accepted by the server', () => {
+  it('adds an order with only the fields accepted by the server', () => {
     const service = TestBed.inject(OrderService);
     const httpTesting = TestBed.inject(HttpTestingController);
     const newOrder: NewOrder = {
@@ -77,7 +77,7 @@ describe('OrderService', () => {
     };
     let response: Order | undefined;
 
-    service.create(newOrder).subscribe((order) => {
+    service.add(newOrder).subscribe((order) => {
       response = order;
     });
 
@@ -88,6 +88,34 @@ describe('OrderService', () => {
     request.flush(createdOrder);
 
     expect(response).toEqual(createdOrder);
+  });
+
+  it('finds an order by its public order number', () => {
+    const service = TestBed.inject(OrderService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const order: Order = {
+      id: '2',
+      orderNumber: 'SCO-0002',
+      accountName: 'Sunrise School',
+      flavour: 'Red Velvet',
+      sizeKg: 3.5,
+      deliveryDate: '2026-11-22',
+      deliveryTown: 'Southbay',
+      status: 'Baking',
+      price: 2900,
+      bigOrder: false,
+      webReference: null,
+    };
+    let response: Order | undefined;
+
+    service.getByNumber('SCO-0002').subscribe((found) => {
+      response = found;
+    });
+
+    const request = httpTesting.expectOne(`${apiBaseUrl}/orders`);
+    expect(request.request.method).toBe('GET');
+    request.flush([order]);
+    expect(response).toEqual(order);
   });
 
   it('patches only the requested status', () => {
