@@ -1,0 +1,92 @@
+<main class="page-shell">
+  @if (errorMessages.message(); as message) {
+    <p class="server-error-banner" role="alert">{{ message }}</p>
+  }
+  @if (loading.isLoading()) {
+    <p class="server-loading-indicator" role="status">Talking to the server…</p>
+  }
+  <header class="page-header">
+    <h1>Sweet Crumbs team</h1>
+    <p class="last-updated">Last updated: {{ lastUpdated$ | async | date: 'mediumTime' }}</p>
+    <div class="status-row">
+      <span class="status-pill">Selected: {{ selectedMember?.name ?? 'none' }}</span>
+      <span class="status-pill">Favorite: {{ favoriteMember?.name ?? 'none yet' }}</span>
+    </div>
+  </header>
+  <div class="toolbar">
+    <input
+      type="search"
+      class="search-input"
+      [(ngModel)]="searchTerm"
+      placeholder="Search by name"
+      aria-label="Search team members"
+    />
+    <input
+      type="text"
+      class="search-input name-input"
+      [(ngModel)]="newName"
+      placeholder="Enter new name"
+      aria-label="New name for selected team member"
+    />
+    <button
+      type="button"
+      class="action-button"
+      [disabled]="!selectedMember || !newName.trim()"
+      (click)="changeSelectedName()"
+    >
+      Change name
+    </button>
+    <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
+    <button type="button" class="action-button" (click)="addTeamMember()">Add team member</button>
+  </div>
+  <div class="date-style-control">
+    <label for="date-format">Date style</label>
+    <select id="date-format" [(ngModel)]="dateFormat">
+      @for (format of dateFormats; track format.value) {
+        <option [value]="format.value">{{ format.label }}</option>
+      }
+    </select>
+  </div>
+  <div class="results-count">
+    Showing {{ (team | filterByName: searchTerm).length }} of {{ team.length }}
+  </div>
+  <a
+    class="action-button"
+    routerLink="/orders"
+    [queryParams]="{ status: 'Out for Delivery' }"
+    >See orders out for delivery</a
+  >
+  @if (selectedMember === null) {
+    <p class="selection-message">Select a card first and change nothing.</p>
+  }
+  @if ((team | filterByName: searchTerm).length > 0) {
+    <div class="cards-grid">
+      @for (member of team | filterByName: searchTerm; track member.covers) {
+        <app-team-card
+          [member]="member"
+          [dateFormat]="dateFormat"
+          [isSelected]="selectedMember?.covers === member.covers"
+          [isFavorite]="favoriteMember?.covers === member.covers"
+          [appHighlight]="getHighlightColor(member)"
+          [class.is-selected]="selectedMember?.covers === member.covers"
+          (cardSelected)="selectMember(member)"
+          (favoriteSelected)="setFavorite(member)"
+        ></app-team-card>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">No team members match</div>
+  }
+  <section class="activity-section" aria-labelledby="activity-heading">
+    <h2 id="activity-heading">Recent activity</h2>
+    @if (recentActivities.length > 0) {
+      <ul class="activity-list">
+        @for (activity of recentActivities; track $index) {
+          <li>{{ activity }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="empty-state">No recent activity yet.</p>
+    }
+  </section>
+</main>

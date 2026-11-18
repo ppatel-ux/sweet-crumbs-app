@@ -1,0 +1,107 @@
+<main class="page-shell">
+  @if (errorMessages.message(); as message) {
+    <p class="server-error-banner" role="alert">{{ message }}</p>
+  }
+  @if (loading.isLoading()) {
+    <p class="server-loading-indicator" role="status">Talking to the server…</p>
+  }
+  <h1>Orders ({{ filteredOrders.length }})</h1>
+  <section class="orders-section" aria-labelledby="orders-heading">
+    <h2 id="orders-heading">Orders</h2>
+    <form class="order-filters" (ngSubmit)="loadOrders()">
+      <label class="order-filter-field" for="order-search">Customer name</label>
+      <input
+        id="order-search"
+        class="search-input"
+        type="search"
+        name="orderSearchTerm"
+        [(ngModel)]="orderSearchTerm"
+        placeholder="Search customers"
+      />
+      <button type="submit" class="action-button" [disabled]="isLoadingOrders">
+        Search orders
+      </button>
+    </form>
+    <div class="order-filters">
+      <label class="order-filter-field" for="order-status-filter">Status</label>
+      <select
+        id="order-status-filter"
+        class="search-input"
+        (change)="updateStatusFilterFromEvent($event)"
+      >
+        <option value="" [selected]="!statusFilter()">All</option>
+        @for (status of orderStatuses; track status) {
+          <option [value]="status" [selected]="statusFilter() === status">{{ status }}</option>
+        }
+      </select>
+      <label class="order-filter-field" for="order-town-filter">Town</label>
+      <select
+        id="order-town-filter"
+        class="search-input"
+        (change)="updateTownFilterFromEvent($event)"
+      >
+        <option value="" [selected]="!townFilter()">All</option>
+        @for (town of deliveryTowns; track town) {
+          <option [value]="town" [selected]="townFilter() === town">{{ town }}</option>
+        }
+      </select>
+      <button type="button" class="action-button" (click)="clearFilters()">Clear filters</button>
+    </div>
+    @if (isLoadingOrders) {
+      <p class="order-feedback" role="status">Loading orders…</p>
+    } @else if (filteredOrders.length > 0) {
+      <div class="table-scroll">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th scope="col">Order</th><th scope="col">Customer</th><th scope="col">Flavour</th>
+              <th scope="col">Size (kg)</th><th scope="col">Delivery date</th><th scope="col">Town</th>
+              <th scope="col">Status</th><th scope="col">Price</th><th scope="col">Order size</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (order of filteredOrders; track order.id) {
+              <tr [class.big-order-row]="order.bigOrder">
+                <td><a [routerLink]="['/orders', order.orderNumber]">{{ order.orderNumber }}</a></td>
+                <td>{{ order.accountName }}</td><td>{{ order.flavour }}</td>
+                <td>{{ order.sizeKg }}</td><td>{{ order.deliveryDate }}</td><td>{{ order.deliveryTown }}</td>
+                <td>
+                  <select
+                    [ngModel]="order.status"
+                    (ngModelChange)="changeOrderStatus(order, $event)"
+                    [disabled]="pendingOrderIds.has(order.id)"
+                    [attr.aria-label]="'Status for ' + order.orderNumber"
+                  >
+                    @for (status of orderStatuses; track status) {
+                      <option [value]="status">{{ status }}</option>
+                    }
+                  </select>
+                </td>
+                <td>{{ order.price ?? '—' }}</td>
+                <td>
+                  @if (order.bigOrder) {
+                    <span class="big-order-badge">Big order</span>
+                  } @else {
+                    <span>Standard</span>
+                  }
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="action-button delete-button"
+                    [disabled]="pendingOrderIds.has(order.id)"
+                    [attr.aria-label]="'Delete ' + order.orderNumber"
+                    (click)="deleteOrder(order)"
+                  >Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="empty-state">No orders found.</p>
+    }
+  </section>
+</main>

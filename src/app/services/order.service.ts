@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { delay, map, Observable } from 'rxjs';
 import { APP_CONFIG } from '../app-config';
 import { DeliveryTown, NewOrder, Order, OrderStatus } from '../models/order';
 
@@ -23,8 +23,22 @@ export class OrderService {
     return this.http.get<Order[]>(`${this.config.apiBaseUrl}/orders`, { params });
   }
 
-  create(order: NewOrder): Observable<Order> {
+  getByNumber(orderNumber: string): Observable<Order | undefined> {
+    return this.getAll().pipe(
+      map((orders) => orders.find((order) => order.orderNumber === orderNumber)),
+    );
+  }
+
+  loadByNumber(orderNumber: string): Observable<Order | undefined> {
+    return this.getByNumber(orderNumber).pipe(delay(600));
+  }
+
+  add(order: NewOrder): Observable<Order> {
     return this.http.post<Order>(`${this.config.apiBaseUrl}/orders`, order);
+  }
+
+  create(order: NewOrder): Observable<Order> {
+    return this.add(order);
   }
 
   changeStatus(id: string, status: OrderStatus): Observable<Order> {
