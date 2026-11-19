@@ -2,19 +2,23 @@
   <h1>Order {{ order().orderNumber }}</h1>
   <section class="orders-section" aria-label="Order details">
     <dl class="order-details">
-      <dt>ID</dt><dd>{{ order().id }}</dd>
-      <dt>Order number</dt><dd>{{ order().orderNumber }}</dd>
-      <dt>Customer</dt><dd>{{ order().accountName }}</dd>
-      <dt>Flavour</dt><dd>{{ order().flavour }}</dd>
-      <dt>Size (kg)</dt><dd>{{ order().sizeKg }}</dd>
-      <dt>Delivery date</dt><dd>{{ order().deliveryDate }}</dd>
-      <dt>Delivery town</dt><dd>{{ order().deliveryTown }}</dd>
-      <dt>Status</dt><dd>{{ order().status }}</dd>
-      <dt>Price</dt><dd>{{ order().price ?? '—' }}</dd>
-      <dt>Big order</dt><dd>{{ order().bigOrder ? 'Yes' : 'No' }}</dd>
-      <dt>Web reference</dt><dd>{{ order().webReference ?? '—' }}</dd>
+      <dt>Customer</dt>
+      <dd>{{ order().accountName }}</dd>
     </dl>
   </section>
+  <nav class="order-tabs" aria-label="Order detail tabs">
+    <a
+      [routerLink]="['bake']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >Bake</a>
+    <a
+      [routerLink]="['delivery']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >Delivery</a>
+  </nav>
+  <router-outlet />
   <nav class="order-detail-navigation" aria-label="Order navigation">
     <a routerLink="/orders">Back to Orders</a>
     @if (nextOrderNumber) {

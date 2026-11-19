@@ -1,0 +1,11 @@
+<section class="orders-section" aria-labelledby="delivery-details-heading">
+  <h2 id="delivery-details-heading">Delivery details</h2>
+  <dl class="tab-details" [attr.aria-label]="'Delivery details for ' + orderNumber()">
+    <dt>Delivery date</dt>
+    <dd>{{ order().deliveryDate }}</dd>
+    <dt>Town</dt>
+    <dd>{{ order().deliveryTown }}</dd>
+    <dt>Status</dt>
+    <dd>{{ order().status }}</dd>
+  </dl>
+</section>

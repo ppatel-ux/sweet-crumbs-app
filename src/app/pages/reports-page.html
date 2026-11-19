@@ -9,9 +9,9 @@
   @if (isLoading) {
     <p role="status">Loading reports…</p>
   } @else {
-    <section class="orders-section" aria-label="Order summary">
+    <section class="orders-section reports-summary" aria-label="Order summary">
       <h2>Orders by status</h2>
-      <dl class="order-details">
+      <dl class="report-metrics">
         @for (status of orderStatuses; track status) {
           <dt>{{ status }}</dt>
           <dd>{{ countByStatus(status) }}</dd>

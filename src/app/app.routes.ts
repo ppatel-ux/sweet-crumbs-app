@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { EnquiryPage } from './pages/enquiry-page';
 import { LoginPage } from './pages/login-page';
 import { OrderDetailPage } from './pages/order-detail-page';
+import { BakeTabPage } from './pages/order-bake-tab-page';
+import { DeliveryTabPage } from './pages/order-delivery-tab-page';
 import { NewOrderPage } from './pages/new-order-page';
 import { NotFoundPage } from './pages/not-found-page';
 import { OrdersPage } from './pages/orders-page';
@@ -27,6 +29,11 @@ export const routes: Routes = [
     component: OrderDetailPage,
     resolve: { order: orderResolver },
     title: 'Order details',
+    children: [
+      { path: '', redirectTo: 'bake', pathMatch: 'full' },
+      { path: 'bake', component: BakeTabPage, title: 'Bake details' },
+      { path: 'delivery', component: DeliveryTabPage, title: 'Delivery details' },
+    ],
   },
   { path: 'enquiry', component: EnquiryPage, title: 'Customer enquiry' },
   { path: 'login', component: LoginPage, title: 'Login' },
