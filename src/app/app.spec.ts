@@ -10,8 +10,10 @@ import { OrderDetailPage } from './pages/order-detail-page';
 import { LoginPage } from './pages/login-page';
 import { NewOrderPage } from './pages/new-order-page';
 import { OrdersPage } from './pages/orders-page';
+import { TeamPage } from './pages/team-page';
 import { AuthService } from './services/auth.service';
 import { OrderService } from './services/order.service';
+import { TeamService } from './services/team.service';
 
 const orderOne: Order = {
   id: '1',
@@ -158,6 +160,47 @@ describe('application routing', () => {
     fixture.detectChanges();
     expect(router.url).toBe('/orders');
     expect(ordersPage.filteredOrders).toHaveLength(3);
+  });
+
+  it('requires selecting a visible team card after changing the name search', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const router = TestBed.inject(Router);
+    const teamService = TestBed.inject(TeamService);
+    fixture.detectChanges();
+
+    await router.navigateByUrl('/team');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const teamPage = fixture.debugElement.query(By.directive(TeamPage)).componentInstance;
+    teamPage.selectMember(teamService.getAll()[0]);
+    fixture.detectChanges();
+
+    const searchInput = fixture.nativeElement.querySelector(
+      'input[aria-label="Search team members"]',
+    ) as HTMLInputElement;
+    searchInput.value = 'a';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(teamPage.searchTerm).toBe('a');
+    expect(teamPage.selectedMember).toBeNull();
+    teamPage.newName = 'Updated Meera';
+    teamPage.changeSelectedName();
+    expect(teamService.getAll()[0].name).toBe('Meera Joshi');
+
+    const sara = teamService.getAll().find((member) => member.name === 'Sara Khan');
+    if (!sara) {
+      throw new Error('Sara Khan should be in the filtered team results.');
+    }
+
+    teamPage.selectMember(sara);
+    teamPage.newName = 'Sara Updated';
+    teamPage.changeSelectedName();
+
+    expect(teamService.getAll()[0].name).toBe('Meera Joshi');
+    expect(teamService.getAll().find((member) => member.name === 'Sara Updated')).toBeDefined();
+    expect(teamPage.selectedMember?.name).toBe('Sara Updated');
   });
 
   it('navigates to the created order detail after saving', async () => {
