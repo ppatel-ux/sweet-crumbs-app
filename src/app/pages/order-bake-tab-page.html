@@ -1,0 +1,13 @@
+<section class="orders-section" aria-labelledby="bake-details-heading">
+  <h2 id="bake-details-heading">Bake details</h2>
+  <dl class="tab-details" [attr.aria-label]="'Bake details for ' + orderNumber()">
+    <dt>Flavour</dt>
+    <dd>{{ order().flavour }}</dd>
+    <dt>Size (kg)</dt>
+    <dd>{{ order().sizeKg }}</dd>
+    <dt>Big order</dt>
+    <dd>{{ order().bigOrder ? 'Yes' : 'No' }}</dd>
+    <dt>Price</dt>
+    <dd>{{ order().price ?? '—' }}</dd>
+  </dl>
+</section>

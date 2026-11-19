@@ -17,7 +17,8 @@
     <input
       type="search"
       class="search-input"
-      [(ngModel)]="searchTerm"
+      [ngModel]="searchTerm"
+      (ngModelChange)="onSearchTermChange($event)"
       placeholder="Search by name"
       aria-label="Search team members"
     />
@@ -31,12 +32,19 @@
     <button
       type="button"
       class="action-button"
-      [disabled]="!selectedMember || !newName.trim()"
+      [disabled]="!canUpdateSelectedMember || !newName.trim()"
       (click)="changeSelectedName()"
     >
       Change name
     </button>
-    <button type="button" class="action-button" (click)="changeSelectedJob()">Change job</button>
+    <button
+      type="button"
+      class="action-button"
+      [disabled]="!canUpdateSelectedMember"
+      (click)="changeSelectedJob()"
+    >
+      Change job
+    </button>
     <button type="button" class="action-button" (click)="addTeamMember()">Add team member</button>
   </div>
   <div class="date-style-control">
@@ -57,7 +65,7 @@
     >See orders out for delivery</a
   >
   @if (selectedMember === null) {
-    <p class="selection-message">Select a card first and change nothing.</p>
+    <p class="selection-message">Select a team card to update its name or job.</p>
   }
   @if ((team | filterByName: searchTerm).length > 0) {
     <div class="cards-grid">

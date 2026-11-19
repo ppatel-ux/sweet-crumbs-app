@@ -12,7 +12,7 @@ import { OrderService } from '../services/order.service';
   standalone: true,
   imports: [CurrencyPipe],
   templateUrl: './reports-page.html',
-  styleUrl: './page.scss',
+  styleUrls: ['./page.scss', './reports-page.scss'],
 })
 export class ReportsPage {
   private readonly destroyRef = inject(DestroyRef);

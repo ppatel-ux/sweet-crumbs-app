@@ -1,6 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
+import {
+  provideRouter,
+  Router,
+  withComponentInputBinding,
+  withRouterConfig,
+} from '@angular/router';
 import { of } from 'rxjs';
 import { AppComponent } from './app';
 import { APP_CONFIG } from './app-config';
@@ -10,8 +15,12 @@ import { OrderDetailPage } from './pages/order-detail-page';
 import { LoginPage } from './pages/login-page';
 import { NewOrderPage } from './pages/new-order-page';
 import { OrdersPage } from './pages/orders-page';
+import { BakeTabPage } from './pages/order-bake-tab-page';
+import { DeliveryTabPage } from './pages/order-delivery-tab-page';
+import { TeamPage } from './pages/team-page';
 import { AuthService } from './services/auth.service';
 import { OrderService } from './services/order.service';
+import { TeamService } from './services/team.service';
 
 const orderOne: Order = {
   id: '1',
@@ -48,7 +57,11 @@ describe('application routing', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
-        provideRouter(routes, withComponentInputBinding()),
+        provideRouter(
+          routes,
+          withComponentInputBinding(),
+          withRouterConfig({ paramsInheritanceStrategy: 'always' }),
+        ),
         {
           provide: APP_CONFIG,
           useValue: {
@@ -97,17 +110,37 @@ describe('application routing', () => {
   it('updates the order detail when the route parameter changes on the same component', async () => {
     const fixture = TestBed.createComponent(AppComponent);
     const router = TestBed.inject(Router);
+    const loadByNumber = vi.spyOn(TestBed.inject(OrderService), 'loadByNumber');
     fixture.detectChanges();
 
     await router.navigateByUrl('/orders/SCO-0002');
     await fixture.whenStable();
     fixture.detectChanges();
+    expect(router.url).toBe('/orders/SCO-0002/bake');
+    expect(fixture.debugElement.query(By.directive(BakeTabPage))).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Red Velvet');
+    expect(loadByNumber).toHaveBeenCalledTimes(1);
     const detailPage = fixture.debugElement.query(By.directive(OrderDetailPage)).componentInstance;
     expect(fixture.nativeElement.textContent).toContain('Sunrise School');
+
+    await router.navigateByUrl('/orders/SCO-0002/delivery');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(router.url).toBe('/orders/SCO-0002/delivery');
+    expect(fixture.debugElement.query(By.directive(DeliveryTabPage))).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Southbay');
+    expect(fixture.nativeElement.textContent).toContain('Baking');
+    expect(fixture.nativeElement.textContent).not.toContain('Red Velvet');
+    expect(
+      fixture.debugElement.query(By.directive(OrderDetailPage)).componentInstance,
+    ).toBe(detailPage);
+    expect(fixture.nativeElement.textContent).toContain('Sunrise School');
+    expect(loadByNumber).toHaveBeenCalledTimes(1);
 
     await router.navigateByUrl('/orders/SCO-0003');
     await fixture.whenStable();
     fixture.detectChanges();
+    expect(router.url).toBe('/orders/SCO-0003/bake');
     expect(
       fixture.debugElement.query(By.directive(OrderDetailPage)).componentInstance,
     ).toBe(detailPage);
@@ -160,6 +193,47 @@ describe('application routing', () => {
     expect(ordersPage.filteredOrders).toHaveLength(3);
   });
 
+  it('requires selecting a visible team card after changing the name search', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const router = TestBed.inject(Router);
+    const teamService = TestBed.inject(TeamService);
+    fixture.detectChanges();
+
+    await router.navigateByUrl('/team');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const teamPage = fixture.debugElement.query(By.directive(TeamPage)).componentInstance;
+    teamPage.selectMember(teamService.getAll()[0]);
+    fixture.detectChanges();
+
+    const searchInput = fixture.nativeElement.querySelector(
+      'input[aria-label="Search team members"]',
+    ) as HTMLInputElement;
+    searchInput.value = 'a';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(teamPage.searchTerm).toBe('a');
+    expect(teamPage.selectedMember).toBeNull();
+    teamPage.newName = 'Updated Meera';
+    teamPage.changeSelectedName();
+    expect(teamService.getAll()[0].name).toBe('Meera Joshi');
+
+    const sara = teamService.getAll().find((member) => member.name === 'Sara Khan');
+    if (!sara) {
+      throw new Error('Sara Khan should be in the filtered team results.');
+    }
+
+    teamPage.selectMember(sara);
+    teamPage.newName = 'Sara Updated';
+    teamPage.changeSelectedName();
+
+    expect(teamService.getAll()[0].name).toBe('Meera Joshi');
+    expect(teamService.getAll().find((member) => member.name === 'Sara Updated')).toBeDefined();
+    expect(teamPage.selectedMember?.name).toBe('Sara Updated');
+  });
+
   it('navigates to the created order detail after saving', async () => {
     const fixture = TestBed.createComponent(AppComponent);
     const router = TestBed.inject(Router);
@@ -183,7 +257,7 @@ describe('application routing', () => {
     newOrderPage.submitOrder();
     await fixture.whenStable();
 
-    expect(router.url).toBe('/orders/SCO-0003');
+    expect(router.url).toBe('/orders/SCO-0003/bake');
     expect(confirm).not.toHaveBeenCalled();
   });
 

@@ -52,6 +52,25 @@ export class TeamPage {
     return this.activityLog.getAll().slice(0, 5);
   }
 
+  get canUpdateSelectedMember(): boolean {
+    const selectedMember = this.selectedMember;
+    if (!selectedMember) {
+      return false;
+    }
+
+    const searchTerm = this.searchTerm.trim().toLowerCase();
+    return this.team.some(
+      (member) =>
+        member.covers === selectedMember.covers &&
+        member.name.toLowerCase().includes(searchTerm),
+    );
+  }
+
+  onSearchTermChange(searchTerm: string): void {
+    this.searchTerm = searchTerm;
+    this.selectedMember = null;
+  }
+
   addTeamMember(): void {
     const number = this.team.length + 1;
     this.team = this.teamService.add({
@@ -76,7 +95,7 @@ export class TeamPage {
 
   changeSelectedName(): void {
     const name = this.newName.trim();
-    if (!this.selectedMember || !name) {
+    if (!this.canUpdateSelectedMember || !this.selectedMember || !name) {
       return;
     }
 
@@ -85,7 +104,7 @@ export class TeamPage {
   }
 
   changeSelectedJob(): void {
-    if (!this.selectedMember) {
+    if (!this.canUpdateSelectedMember || !this.selectedMember) {
       return;
     }
 
@@ -111,7 +130,11 @@ export class TeamPage {
     }
 
     this.team = this.teamService.update(currentMember, updatedMember);
-    this.selectedMember = updatedMember;
+    const searchTerm = this.searchTerm.trim().toLowerCase();
+    this.selectedMember =
+      !searchTerm || updatedMember.name.toLowerCase().includes(searchTerm)
+        ? updatedMember
+        : null;
     if (this.favoriteMember?.covers === updatedMember.covers) {
       this.favoriteMember = updatedMember;
     }

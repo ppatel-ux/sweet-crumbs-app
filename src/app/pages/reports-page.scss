@@ -1,0 +1,21 @@
+.reports-summary {
+  max-width: 560px;
+}
+
+.report-metrics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 12px 24px;
+  max-width: 400px;
+  margin: 0;
+}
+
+.report-metrics dt {
+  font-weight: 600;
+}
+
+.report-metrics dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

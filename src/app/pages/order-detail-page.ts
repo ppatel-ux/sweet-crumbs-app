@@ -1,13 +1,13 @@
 import { Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Order } from '../models/order';
 
 @Component({
   selector: 'app-order-detail-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './order-detail-page.html',
-  styleUrl: './page.scss',
+  styleUrls: ['./page.scss', './order-detail-page.scss'],
 })
 export class OrderDetailPage {
   readonly orderNumber = input.required<string>();

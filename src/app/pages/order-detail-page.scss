@@ -1,0 +1,43 @@
+.order-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 12px 24px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.order-details dt {
+  font-weight: 700;
+}
+
+.order-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  border-bottom: 1px solid #e6def4;
+}
+
+.order-tabs a {
+  padding: 10px 14px;
+  color: #4c4b6a;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.order-tabs a.active {
+  color: #4a2d8b;
+  border-bottom: 3px solid #6d4aff;
+}
+
+.order-detail-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
